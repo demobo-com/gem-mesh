@@ -48,7 +48,7 @@ import com.demobo.mesh.ui.theme.MeshTheme
 /** Phone model, the Mac (pairing), private terms, Gemini, memory. Terms, mesh and Gemini apply on Save. */
 @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
-fun SettingsScreen(state: UiState, vm: ChatViewModel, scan: () -> Unit, pick: () -> Unit, close: () -> Unit) {
+fun SettingsScreen(state: UiState, vm: ChatViewModel, scan: () -> Unit, pick: () -> Unit, openMemory: () -> Unit, close: () -> Unit) {
     var terms by remember { mutableStateOf(state.terms) }
     var mesh by remember { mutableStateOf(state.mesh) }
     var frontier by remember { mutableStateOf(state.frontier) }
@@ -89,7 +89,7 @@ fun SettingsScreen(state: UiState, vm: ChatViewModel, scan: () -> Unit, pick: ()
             }
 
             Section("Your Mac", "On the same Wi-Fi the phone finds your Mac by itself; nothing to set. To pair once and keep it, " +
-                "run gemma-mesh pair on the Mac and scan its QR code (or paste the code it prints).") {
+                "run gem-mesh pair on the Mac and scan its QR code (or paste the code it prints).") {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = scan) { Text("Scan QR code") }
                 }
@@ -176,15 +176,16 @@ fun SettingsScreen(state: UiState, vm: ChatViewModel, scan: () -> Unit, pick: ()
                     style = MaterialTheme.typography.bodyMedium)
                 Text("${state.device} · ${state.memoryNote} · recall: ${state.recall}", style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp))
+                TextButton(onClick = openMemory) { Text("See and edit memory") }
                 var confirm by remember { mutableStateOf(false) }
                 if (!confirm) {
-                    TextButton(onClick = { confirm = true }, enabled = m.values.sum() > 0 && !state.busy) { Text("Delete memory on this phone") }
+                    TextButton(onClick = { confirm = true }, enabled = m.values.sum() > 0 && !state.busy) { Text("Forget everything") }
                 } else {
-                    Text("Deletes everything on this phone. Your Mac's mirror keeps its copy (the protocol has no deletions yet).",
+                    Text("Every conversation, fact and document, on this phone now and on your Mac at its next sync.",
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
                     Row {
                         TextButton(onClick = { confirm = false }) { Text("Cancel") }
-                        TextButton(onClick = { vm.deleteHistory(); confirm = false }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+                        TextButton(onClick = { vm.deleteHistory(); confirm = false }) { Text("Forget everything", color = MaterialTheme.colorScheme.error) }
                     }
                 }
             }

@@ -172,6 +172,7 @@ The model downloads from Hugging Face into the app's files directory (`Android/d
 - `tools/` — the chat's tools, ported from `files.py`, `web.py` and `toolparse.py`: `Workspace` (the folder, EXIF), `Images` (edit_image, make_image), `Pdf` (PDFBox: text, pages, stamps), `Actions` (planned changes, shown for approval first), `Web`, `ToolParse`, `ToolDefs` (generated verbatim from the Python definitions).
 - `local/` — model download and the LiteRT-LM engine (E4B or E2B, with its image encoder for look_at_image), GPU first with CPU fallback; tools with automatic tool calling off.
 - `ui/` — chat with badges, tool lines and file thumbnails, conversation drawer, tier strip, queue card, approval sheet (before → after), Gemini sheet, settings (pairing, workspace, memory).
+- `ui/MeshScreen`, `MeshDetail`, `MemoryScreen`, `MeshStats` — the Mesh page (a swipe left of the chat, or **Mesh ›** in the tier strip), ported from the iPhone app: live map, tokens by tier, sessions by device, each link's turns with the router's reasons, and what memory holds (recall check, add, forget). Counted from every device's turns in memory (PROTOCOL §4 meta).
 
 The workspace is `Android/data/com.demobo.mesh/files/workspace/`; Settings → Workspace adds photos and files from
 the phone or the demo files (`demo/files`, bundled at build time). Text shared from another app lands in the composer.

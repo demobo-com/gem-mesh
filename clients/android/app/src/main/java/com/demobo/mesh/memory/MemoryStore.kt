@@ -18,7 +18,7 @@ data class Event(
     val seq: Long,
     /** Seconds since the epoch, as in the Python store. */
     val ts: Double,
-    /** chat | fact | doc */
+    /** chat | fact | doc | forget */
     val kind: String,
     val session: String?,
     val role: String?,
@@ -49,7 +49,7 @@ data class Hit(val event: Event, val score: Double)
  * mirror pushes its own events here and pulls ours through [MemoryServer]. Vectors are not synced (each device
  * embeds for itself); until the phone has an embedding model, recall is by keywords.
  */
-class MemoryStore(context: Context, val device: String) : SQLiteOpenHelper(context, "memory.db", null, 2) {
+class MemoryStore(context: Context, val device: String) : SQLiteOpenHelper(context, "memory.db", null, 3) {
 
     /** Set once EmbeddingGemma is on the phone; until then recall is by keywords. */
     @Volatile var embedder: Embedder? = null
@@ -75,6 +75,8 @@ class MemoryStore(context: Context, val device: String) : SQLiteOpenHelper(conte
         )
         db.execSQL("CREATE TABLE IF NOT EXISTS vectors (id TEXT PRIMARY KEY, vec BLOB NOT NULL)")
         db.execSQL("CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT)")
+        // Ids of forgotten events: a copy the laptop sends again is not taken in (PROTOCOL §4).
+        db.execSQL("CREATE TABLE IF NOT EXISTS forgotten (id TEXT PRIMARY KEY)")
         db.execSQL("CREATE INDEX IF NOT EXISTS events_by_session ON events(session, rowid)")
         // Work waiting for a bigger tier (session.py's queue database); local to the phone, never synced.
         db.execSQL(
@@ -84,7 +86,7 @@ class MemoryStore(context: Context, val device: String) : SQLiteOpenHelper(conte
         )
     }
 
-    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) = onCreate(db) // v2 added vectors
+    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) = onCreate(db) // v2 added vectors, v3 forgotten
 
     private val cols = "id, device, seq, ts, kind, session, role, text, meta"
 
@@ -112,8 +114,29 @@ class MemoryStore(context: Context, val device: String) : SQLiteOpenHelper(conte
             put("kind", kind); put("session", session); put("role", role); put("text", t)
             put("meta", (meta ?: JSONObject()).toString()); put("pending", 0)
         })
+        if (kind == "forget") applyForget(db, targets(meta))
         return id
     }
+
+    /** Forgets these events here and, through sync, on the laptop: a "forget" event naming them (PROTOCOL §4). */
+    @Synchronized
+    fun forget(ids: List<String>, what: String): String {
+        val t = ids.filter { it.isNotEmpty() }.distinct()
+        if (t.isEmpty()) return ""
+        return append("forget", what, meta = JSONObject().put("targets", JSONArray(t)))
+    }
+
+    /** Deletes the targets (never a forget event) and their vectors, and keeps their ids. */
+    private fun applyForget(db: SQLiteDatabase, targets: List<String>) {
+        for (t in targets) {
+            db.execSQL("INSERT OR IGNORE INTO forgotten (id) VALUES (?)", arrayOf(t))
+            db.execSQL("DELETE FROM events WHERE id = ? AND kind != 'forget'", arrayOf(t))
+            db.execSQL("DELETE FROM vectors WHERE id = ?", arrayOf(t))
+        }
+    }
+
+    private fun targets(meta: JSONObject?): List<String> =
+        meta?.optJSONArray("targets")?.let { a -> (0 until a.length()).map { a.optString(it) }.filter { it.isNotEmpty() } } ?: emptyList()
 
     // ---- sync (authority side) ----------------------------------------------------------------
 
@@ -128,7 +151,10 @@ class MemoryStore(context: Context, val device: String) : SQLiteOpenHelper(conte
         return out to last
     }
 
-    /** `POST /memory/push`: events from the laptop (idempotent). Returns how many were new. */
+    /**
+     * `POST /memory/push`: events from the laptop (idempotent). Returns how many were new. A forget event deletes
+     * its targets; an event forgotten here is not taken in again.
+     */
     @Synchronized
     fun ingest(events: List<Event>): Int {
         val db = writableDatabase
@@ -136,10 +162,12 @@ class MemoryStore(context: Context, val device: String) : SQLiteOpenHelper(conte
         db.beginTransaction()
         try {
             for (e in events) {
+                if (e.kind != "forget" && db.rawQuery("SELECT 1 FROM forgotten WHERE id = ?", arrayOf(e.id)).use { it.moveToFirst() }) continue
                 val r = db.insertWithOnConflict("events", null, ContentValues().apply {
                     put("id", e.id); put("device", e.device); put("seq", e.seq); put("ts", e.ts); put("kind", e.kind)
                     put("session", e.session); put("role", e.role); put("text", e.text); put("meta", e.meta.toString()); put("pending", 0)
                 }, SQLiteDatabase.CONFLICT_IGNORE)
+                if (r != -1L && e.kind == "forget") applyForget(db, targets(e.meta))
                 if (r != -1L) n++
             }
             db.setTransactionSuccessful()
@@ -180,6 +208,12 @@ class MemoryStore(context: Context, val device: String) : SQLiteOpenHelper(conte
         }
     }
 
+    /** Every device's chat turns since `ts`, oldest first: what the Mesh page counts. */
+    @Synchronized
+    fun chats(since: Double): List<Event> = readableDatabase.rawQuery(
+        "SELECT $cols FROM events WHERE kind = 'chat' AND ts >= ? ORDER BY ts, rowid", arrayOf(since.toString()),
+    ).use { c -> buildList { while (c.moveToNext()) add(c.event()) } }
+
     @Synchronized
     fun chat(session: String): List<Event> = readableDatabase.rawQuery(
         "SELECT $cols FROM events WHERE kind = 'chat' AND session = ? ORDER BY ts, rowid", arrayOf(session),
@@ -190,12 +224,46 @@ class MemoryStore(context: Context, val device: String) : SQLiteOpenHelper(conte
         buildMap { while (c.moveToNext()) put(c.getString(0), c.getInt(1)) }
     }
 
-    /** Deletes this phone's copy only: the protocol has no deletions, so the laptop's mirror keeps what it pulled. */
+    // ---- what memory holds --------------------------------------------------------------------
+
+    /** Remembered facts, newest first: said by the user (`remember`) or extracted from a conversation. */
+    @Synchronized
+    fun facts(): List<Event> = readableDatabase.rawQuery("SELECT $cols FROM events WHERE kind = 'fact' ORDER BY ts DESC, rowid DESC", null)
+        .use { c -> buildList { while (c.moveToNext()) add(c.event()) } }
+
+    /** An indexed document (the Mac's `/index`): its file name, chunk ids, when it was added and where. */
+    data class Document(val name: String, val ids: List<String>, val ts: Double, val device: String)
+
+    /** Indexed documents, one entry per file, newest first. */
+    fun documents(): List<Document> {
+        val chunks = synchronized(this) {
+            readableDatabase.rawQuery("SELECT $cols FROM events WHERE kind = 'doc' ORDER BY rowid", null)
+                .use { c -> buildList { while (c.moveToNext()) add(c.event()) } }
+        }
+        val files = LinkedHashMap<String, Document>()
+        for (c in chunks) {
+            val name = c.meta.optString("path").substringAfterLast('/').ifEmpty { "document" }
+            val d = files[name]
+            files[name] = d?.copy(ids = d.ids + c.id) ?: Document(name, listOf(c.id), c.ts, c.device)
+        }
+        return files.values.sortedByDescending { it.ts }
+    }
+
+    /** The ids of a conversation's turns, to forget it whole. */
+    @Synchronized
+    fun sessionIds(session: String): List<String> = readableDatabase.rawQuery("SELECT id FROM events WHERE kind = 'chat' AND session = ?", arrayOf(session))
+        .use { c -> buildList { while (c.moveToNext()) add(c.getString(0)) } }
+
+    /**
+     * Forgets everything, here and on the laptop: one forget event naming every event (the forgets stay, so the
+     * laptop still pulls them).
+     */
     @Synchronized
     fun deleteAll() {
-        writableDatabase.delete("events", null, null)
+        val ids = readableDatabase.rawQuery("SELECT id FROM events WHERE kind != 'forget'", null)
+            .use { c -> buildList { while (c.moveToNext()) add(c.getString(0)) } }
+        forget(ids, "forgot everything (${ids.size} items)")
         writableDatabase.delete("vectors", null, null)
-        writableDatabase.delete("kv", "k != 'seq'", null)
     }
 
     // ---- recall -------------------------------------------------------------------------------
@@ -204,7 +272,7 @@ class MemoryStore(context: Context, val device: String) : SQLiteOpenHelper(conte
     fun reindex(): Int {
         val e = embedder ?: return 0
         val missing = synchronized(this) {
-            readableDatabase.rawQuery("SELECT e.id, e.text FROM events e LEFT JOIN vectors v ON v.id = e.id WHERE v.id IS NULL", null)
+            readableDatabase.rawQuery("SELECT e.id, e.text FROM events e LEFT JOIN vectors v ON v.id = e.id WHERE v.id IS NULL AND e.kind != 'forget'", null)
                 .use { c -> buildList { while (c.moveToNext()) add(c.getString(0) to c.getString(1)) } }
         }
         var n = 0

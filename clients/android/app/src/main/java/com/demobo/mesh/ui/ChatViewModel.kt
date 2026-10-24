@@ -20,6 +20,7 @@ import com.demobo.mesh.net.ChatMessage
 import com.demobo.mesh.net.MeshInfo
 import com.demobo.mesh.net.OpenAiClient
 import com.demobo.mesh.net.StreamEvent
+import com.demobo.mesh.net.TokenCount
 import com.demobo.mesh.nodes.Discovery
 import com.demobo.mesh.nodes.Frontier
 import com.demobo.mesh.nodes.Node
@@ -73,10 +74,21 @@ data class Provenance(
     val thinking: Boolean = false,
     /** Built from the web: recall skips it (meta.web in PROTOCOL §4). */
     val web: Boolean = false,
+    /**
+     * Tokens this turn took, every model call of it summed: prompt (`cached` of it already in the node's KV cache)
+     * and generated. `estimated` when a model reported none and 4 characters were counted as a token.
+     */
+    val tokens: TokenCount = TokenCount(),
 ) {
     /** The `meta` of the assistant's chat event; `node` and `model` are the keys the Python client writes. */
     fun toMeta(): JSONObject = JSONObject().put("node", device).put("model", model).put("tier", tier).putOpt("privacy", privacy)
-        .put("route", JSONArray(log)).putOpt("seconds", seconds).put("left", left).put("thinking", thinking).apply { if (web) put("web", true) }
+        .put("route", JSONArray(log)).putOpt("seconds", seconds).put("left", left).put("thinking", thinking).apply {
+            if (web) put("web", true)
+            if (tokens.input > 0 || tokens.output > 0) {
+                put("tokens_in", tokens.input).put("tokens_out", tokens.output).put("tokens_cached", tokens.cached)
+                if (tokens.estimated) put("tokens_est", true)
+            }
+        }
 
     companion object {
         fun fromMeta(o: JSONObject, fallbackDevice: String): Provenance = Provenance(
@@ -87,6 +99,7 @@ data class Provenance(
             left = o.optString("left").ifEmpty { if (o.optBoolean("web")) "web search left the mesh" else "stayed in the mesh" },
             thinking = o.optBoolean("thinking"),
             web = o.optBoolean("web"),
+            tokens = TokenCount.fromMeta(o),
         )
     }
 }
@@ -181,6 +194,10 @@ data class UiState(
     val pairNote: String? = null,
     /** Also true until the last conversation has been loaded. */
     val busy: Boolean = true,
+    /** The device whose model is answering right now (this phone's own name for its model); the moving dots on the map. */
+    val activeNode: String? = null,
+    /** When the Mac's mirror last pulled or pushed memory (milliseconds), or null since the app opened. */
+    val lastMirrorSync: Long? = null,
 ) {
     val phoneReady: Boolean get() = model is ModelState.Ready
     val waiting: List<QueuedTask> get() = queue.filter { it.status == "waiting" || it.status == "running" }
@@ -254,7 +271,8 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     // ---- memory authority ----------------------------------------------------------------------
 
     private suspend fun startMemoryServer(mem: MemoryStore) {
-        val s = MemoryServer(getApplication(), mem, local.modelId) { _ -> viewModelScope.launch { onPushed() } }
+        val s = MemoryServer(getApplication(), mem, local.modelId, onPushed = { _ -> viewModelScope.launch { onPushed() } },
+            onSynced = { _state.update { it.copy(lastMirrorSync = System.currentTimeMillis()) } })
         discovery.self = s.instance
         val ok = withContext(Dispatchers.IO) { s.begin(_state.value.mesh) }
         server = if (ok) s else null
@@ -314,13 +332,54 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         _state.update { it.copy(messages = emptyList(), session = null, frontierNext = false) }
     }
 
-    /** Deletes this phone's copy of everything: conversations, facts, documents. */
+    /** Forgets everything, on this phone now and on the Mac at its next sync: conversations, facts, documents. */
     fun deleteHistory() = viewModelScope.launch {
         if (_state.value.busy) return@launch
         withContext(Dispatchers.IO) { memoryReady.await().deleteAll() }
         _state.update { it.copy(messages = emptyList(), session = null) }
         refreshMemory()
     }
+
+    // ---- the Mesh and Memory pages -------------------------------------------------------------
+
+    /** The Mesh page's numbers for one range, counted from every device's chat turns in memory. */
+    suspend fun meshStats(range: MeshRange): MeshStats {
+        val mem = memoryReady.await()
+        val now = System.currentTimeMillis() / 1000.0
+        val events = withContext(Dispatchers.IO) { mem.chats(since = now - range.seconds - 3600) }   // an hour more: the questions just before
+        val s = _state.value
+        val tiers = s.machines.associate { it.device to it.tier }
+        return MeshStats(events, range, now, s.device) { tiers[it] ?: "?" }
+    }
+
+    suspend fun facts(): List<Event> = withContext(Dispatchers.IO) { memoryReady.await().facts() }
+    suspend fun documents(): List<MemoryStore.Document> = withContext(Dispatchers.IO) { memoryReady.await().documents() }
+
+    /** Remembers a fact the user typed on the Memory page. */
+    fun rememberFact(text: String) = viewModelScope.launch {
+        if (text.isBlank()) return@launch
+        withContext(Dispatchers.IO) { memoryReady.await().append("fact", text, meta = JSONObject().put("source", "typed")) }
+        refreshMemory()
+        launchReindex()
+    }
+
+    /** Forgets events here and, through sync, on the Mac (PROTOCOL §4 forget events). */
+    fun forget(ids: List<String>, what: String) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { memoryReady.await().forget(ids, what) }
+        refreshMemory()
+    }
+
+    /** Forgets a whole conversation; the open chat is cleared if it was this one. */
+    fun forgetSession(session: String, title: String) = viewModelScope.launch {
+        if (_state.value.busy) return@launch
+        withContext(Dispatchers.IO) { memoryReady.await().let { it.forget(it.sessionIds(session), "forgot conversation: ${title.take(80)}") } }
+        if (_state.value.session == session) _state.update { it.copy(messages = emptyList(), session = null) }
+        refreshMemory()
+    }
+
+    /** What the model would be handed for this question: the same recall the chat does before every turn. */
+    suspend fun recallPreview(query: String): List<com.demobo.mesh.memory.Hit> =
+        if (query.isBlank()) emptyList() else withContext(Dispatchers.IO) { memoryReady.await().search(query, k = 4) }
 
     private fun sessionId(): String = _state.value.session ?: UUID.randomUUID().toString().replace("-", "").take(12).also { id ->
         _state.update { it.copy(session = id) }
@@ -714,6 +773,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         var lastResult: Pair<String, String>? = null
         var retried = false
         var device = if (c.local) "phone" else c.device
+        var tokens = TokenCount()
         fun prov() = Provenance(
             device = device, model = if (c.local) local.label else c.model, tier = c.tier, privacy = p.decision.privacy,
             log = p.decision.log + steps.filter { it.startsWith("route") }, thinking = thinkingFor(c, p.decision.heavy),
@@ -722,8 +782,10 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 c.local -> "nothing left the phone"
                 else -> "0 bytes left the mesh"
             },
+            tokens = tokens,
         )
         fun step(line: String) { steps += line; onStep(line) }
+        fun active() = _state.update { it.copy(activeNode = if (c.local) it.device else c.device) }
         // Only a node the router could have chosen: inside this conversation's window, with room for `need` tokens.
         fun bigger(need: Int): Candidate? {
             val lo = policy.rank(p.decision.floor); val hi = policy.rank(p.decision.ceiling)
@@ -732,81 +794,90 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         }
         onProvenance(prov())
         onPhase(if (c.local) "Answering on this phone…" else "Sending to ${c.device}…")
-        var round = 0
-        while (round < 6) {
-            round++
-            val texts = StringBuilder()
-            var calls: List<ToolCall> = emptyList()
-            try {
-                if (c.local) {
-                    local.turn(p.system, convo.drop(1), tools).collect { ev ->
-                        when (ev) {
-                            is LocalEvent.Text -> { texts.append(ev.text); onText(ev.text) }
-                            is LocalEvent.Calls -> calls = ev.calls
+        active()
+        try {
+            var round = 0
+            while (round < 6) {
+                round++
+                val texts = StringBuilder()
+                var calls: List<ToolCall> = emptyList()
+                var used: TokenCount? = null
+                try {
+                    if (c.local) {
+                        local.turn(p.system, convo.drop(1), tools).collect { ev ->
+                            when (ev) {
+                                is LocalEvent.Text -> { texts.append(ev.text); onText(ev.text) }
+                                is LocalEvent.Calls -> calls = ev.calls
+                                is LocalEvent.Usage -> used = ev.tokens
+                            }
+                        }
+                    } else {
+                        val node = nodeFor(c) ?: error("${c.device} is gone")
+                        client.streamTools(node, convo, session, tools, thinking = thinkingFor(c, p.decision.heavy)).collect { ev ->
+                            when (ev) {
+                                is StreamEvent.Delta -> { texts.append(ev.text); onText(ev.text) }
+                                is StreamEvent.Calls -> calls = ev.calls
+                                is StreamEvent.Meta -> ev.device?.let { device = it; onProvenance(prov()) }
+                                is StreamEvent.Usage -> used = ev.tokens
+                                is StreamEvent.Sent -> Unit
+                            }
                         }
                     }
-                } else {
-                    val node = nodeFor(c) ?: error("${c.device} is gone")
-                    client.streamTools(node, convo, session, tools, thinking = thinkingFor(c, p.decision.heavy)).collect { ev ->
-                        when (ev) {
-                            is StreamEvent.Delta -> { texts.append(ev.text); onText(ev.text) }
-                            is StreamEvent.Calls -> calls = ev.calls
-                            is StreamEvent.Meta -> ev.device?.let { device = it; onProvenance(prov()) }
-                            is StreamEvent.Sent -> Unit
-                        }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    // A malformed tool call: read it forgivingly; if it cannot be read, ask once more.
+                    calls = ToolParse.recover(e.message ?: "")
+                    if (calls.isEmpty() && "parse tool call" in (e.message ?: "") && !retried) { retried = true; onReset(); continue }
+                    if (calls.isEmpty()) throw e
+                    step("tool   repaired a malformed tool call")
+                }
+                tokens += used ?: TokenCount.estimate(convo.joinToString("") { it.optString("content") }, texts.toString())
+                out.append(texts)
+                if (calls.isEmpty()) break
+                val wantsWeb = calls.any { it.name == "web_search" || it.name == "fetch" }
+                if (wantsWeb && c.local) {
+                    val bigger = bigger(msgs.sumOf { it.optString("content").length / 4 })
+                    if (bigger != null) {
+                        // The phone triages; a laptop or workstation reads the web. Restart the question there.
+                        c = bigger; device = c.device; active()
+                        step("route  web question handed up the mesh → ${c.device} / ${c.model}")
+                        onProvenance(prov())
+                        convo = msgs.toMutableList(); out.setLength(0); onReset()
+                        continue
                     }
                 }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                // A malformed tool call: read it forgivingly; if it cannot be read, ask once more.
-                calls = ToolParse.recover(e.message ?: "")
-                if (calls.isEmpty() && "parse tool call" in (e.message ?: "") && !retried) { retried = true; onReset(); continue }
-                if (calls.isEmpty()) throw e
-                step("tool   repaired a malformed tool call")
-            }
-            out.append(texts)
-            if (calls.isEmpty()) break
-            val wantsWeb = calls.any { it.name == "web_search" || it.name == "fetch" }
-            if (wantsWeb && c.local) {
-                val bigger = bigger(msgs.sumOf { it.optString("content").length / 4 })
-                if (bigger != null) {
-                    // The phone triages; a laptop or workstation reads the web. Restart the question there.
-                    c = bigger; device = c.device
-                    step("route  web question handed up the mesh → ${c.device} / ${c.model}")
-                    onProvenance(prov())
-                    convo = msgs.toMutableList(); out.setLength(0); onReset()
-                    continue
+                convo += JSONObject().put("role", "assistant").put("content", texts.toString()).put("tool_calls", JSONArray(calls.map { it.toJson() }))
+                for (call in calls) {
+                    val args = call.args()
+                    onPhase(phaseFor(call.name))
+                    val result = withContext(Dispatchers.IO) { runTool(call.name, args, webUsed, small = c.local, approve = approve, session = session) }
+                    lastResult = call.name to result
+                    step(stepLine(call.name, args, result))
+                    if (call.name in Actions.NAMES && result.startsWith("Done")) files += producedFiles(call.name, args)
+                    convo += JSONObject().put("role", "tool").put("tool_call_id", call.id).put("name", call.name).put("content", result)
                 }
-            }
-            convo += JSONObject().put("role", "assistant").put("content", texts.toString()).put("tool_calls", JSONArray(calls.map { it.toJson() }))
-            for (call in calls) {
-                val args = call.args()
-                onPhase(phaseFor(call.name))
-                val result = withContext(Dispatchers.IO) { runTool(call.name, args, webUsed, small = c.local, approve = approve, session = session) }
-                lastResult = call.name to result
-                step(stepLine(call.name, args, result))
-                if (call.name in Actions.NAMES && result.startsWith("Done")) files += producedFiles(call.name, args)
-                convo += JSONObject().put("role", "tool").put("tool_call_id", call.id).put("name", call.name).put("content", result)
-            }
-            val read = convo.sumOf { it.optString("content").length / 4 }
-            if (c.local && read > policy.longPromptTokens) {
-                // A tool brought in more than the phone should read (a whole lease): the next node up answers, with what was read.
-                bigger(read)?.let {
-                    c = it; device = c.device
-                    step("route  %,d tokens read, handed up the mesh → ${c.device} / ${c.model}".format(read))
-                    onPhase("Sending to ${c.device}…")
+                val read = convo.sumOf { it.optString("content").length / 4 }
+                if (c.local && read > policy.longPromptTokens) {
+                    // A tool brought in more than the phone should read (a whole lease): the next node up answers, with what was read.
+                    bigger(read)?.let {
+                        c = it; device = c.device; active()
+                        step("route  %,d tokens read, handed up the mesh → ${c.device} / ${c.model}".format(read))
+                        onPhase("Sending to ${c.device}…")
+                    }
                 }
+                onProvenance(prov())
             }
-            onProvenance(prov())
+            var text = out.toString()
+            if (text.isBlank() && lastResult != null && lastResult.first in setOf("list_files", "read_file", "recall", "look_at_image") + Actions.NAMES) {
+                // Small models sometimes stop after a tool call without answering: show what the tool found.
+                text = lastResult.second
+            }
+            val pv = prov().copy(seconds = (System.currentTimeMillis() - t0) / 1000.0)
+            return Answer(text, if (webUsed.isNotEmpty()) pv.copy(web = true) else pv, c, steps, files.distinct())
+        } finally {
+            _state.update { it.copy(activeNode = null) }
         }
-        var text = out.toString()
-        if (text.isBlank() && lastResult != null && lastResult.first in setOf("list_files", "read_file", "recall", "look_at_image") + Actions.NAMES) {
-            // Small models sometimes stop after a tool call without answering: show what the tool found.
-            text = lastResult.second
-        }
-        val pv = prov().copy(seconds = (System.currentTimeMillis() - t0) / 1000.0)
-        return Answer(text, if (webUsed.isNotEmpty()) pv.copy(web = true) else pv, c, steps, files.distinct())
     }
 
     private fun json(role: String, content: String) = JSONObject().put("role", role).put("content", content)
@@ -1014,16 +1085,24 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                     edit(a.messageId) { it.copy(phase = "Sending to Gemini…", provenance = prov) }
                     val t0 = System.currentTimeMillis()
                     var bytes = 0
-                    client.frontier(f, a.text).collect { ev ->
-                        when (ev) {
-                            is StreamEvent.Delta -> edit(a.messageId) { it.copy(text = it.text + ev.text, phase = null) }
-                            is StreamEvent.Sent -> bytes = a.text.toByteArray().size
-                            is StreamEvent.Meta, is StreamEvent.Calls -> Unit
+                    var used: TokenCount? = null
+                    _state.update { it.copy(activeNode = "frontier") }
+                    try {
+                        client.frontier(f, a.text).collect { ev ->
+                            when (ev) {
+                                is StreamEvent.Delta -> edit(a.messageId) { it.copy(text = it.text + ev.text, phase = null) }
+                                is StreamEvent.Sent -> bytes = a.text.toByteArray().size
+                                is StreamEvent.Usage -> used = ev.tokens
+                                is StreamEvent.Meta, is StreamEvent.Calls -> Unit
+                            }
                         }
+                    } finally {
+                        _state.update { it.copy(activeNode = null) }
                     }
-                    prov = prov.copy(seconds = (System.currentTimeMillis() - t0) / 1000.0, left = "$bytes bytes left the mesh (approved)")
-                    edit(a.messageId) { it.copy(streaming = false, phase = null, provenance = prov) }
                     val answer = _state.value.messages.find { it.id == a.messageId }?.text.orEmpty()
+                    prov = prov.copy(seconds = (System.currentTimeMillis() - t0) / 1000.0, left = "$bytes bytes left the mesh (approved)",
+                        tokens = used ?: TokenCount.estimate(a.text, answer))
+                    edit(a.messageId) { it.copy(streaming = false, phase = null, provenance = prov) }
                     record("user", a.text, session)
                     record("assistant", answer, session, prov.toMeta().put("frontier", true))
                     refreshMemory()

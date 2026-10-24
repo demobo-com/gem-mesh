@@ -60,7 +60,7 @@ data class Frontier(
 )
 
 /**
- * The pairing code `gemma-mesh pair` prints (PROTOCOL §1):
+ * The pairing code `gem-mesh pair` prints (PROTOCOL §1):
  * {"v":1,"app":"gemma-mesh","mesh":"default","nodes":["http://192.168.1.20:9400"],"device":"my-macbook"}
  */
 data class Pairing(val mesh: String, val nodes: List<String>, val device: String) {
@@ -69,7 +69,7 @@ data class Pairing(val mesh: String, val nodes: List<String>, val device: String
             val o = JSONObject(s.trim())
             require(o.optInt("v") == 1 && o.optString("app") in setOf("gem-mesh", "gemma-mesh")) { "not a Gem Mesh pairing code" }   // "gemma-mesh": codes from before the rename
             val nodes = o.optJSONArray("nodes")?.let { a -> (0 until a.length()).mapNotNull { Node.normalizeUrl(a.getString(it)) } }.orEmpty()
-            require(nodes.isNotEmpty()) { "the code lists no address; run gemma-mesh pair on the Mac while it is on Wi-Fi" }
+            require(nodes.isNotEmpty()) { "the code lists no address; run gem-mesh pair on the Mac while it is on Wi-Fi" }
             Pairing(o.optString("mesh", "default").ifBlank { "default" }, nodes, o.optString("device", "mac"))
         }
     }

@@ -19,8 +19,35 @@ import java.util.concurrent.TimeUnit
 
 data class ChatMessage(val role: String, val content: String)
 
-/** `GET /mesh/info` (PROTOCOL §2). `maxNumTokens` is the node's context window. */
-data class MeshInfo(val device: String, val tier: String, val model: String, val maxNumTokens: Int?, val load: Double)
+/**
+ * `GET /mesh/info` (PROTOCOL §2). `maxNumTokens` is the node's context window; `tokens*` are the node's own totals
+ * since it started (every client, side requests included), null from older nodes.
+ */
+data class MeshInfo(
+    val device: String, val tier: String, val model: String, val maxNumTokens: Int?, val load: Double,
+    val tokensIn: Int? = null, val tokensOut: Int? = null, val tokensCached: Int? = null,
+)
+
+/** Token counts of one model call or a whole turn (OpenAI `usage`: prompt_tokens, completion_tokens, cached_tokens). */
+data class TokenCount(val input: Int = 0, val output: Int = 0, val cached: Int = 0, val estimated: Boolean = false) {
+    operator fun plus(b: TokenCount) = TokenCount(input + b.input, output + b.output, cached + b.cached, estimated || b.estimated)
+
+    companion object {
+        /** From an OpenAI `usage` object; null when it counts nothing (an older node reports zeros). */
+        fun fromUsage(u: JSONObject): TokenCount? {
+            val i = u.optInt("prompt_tokens"); val o = u.optInt("completion_tokens")
+            if (i == 0 && o == 0) return null
+            return TokenCount(i, o, u.optJSONObject("prompt_tokens_details")?.optInt("cached_tokens") ?: 0)
+        }
+
+        /** The keys an assistant event's meta carries (PROTOCOL §4). */
+        fun fromMeta(o: JSONObject) = TokenCount(o.optInt("tokens_in"), o.optInt("tokens_out"), o.optInt("tokens_cached"), o.optBoolean("tokens_est"))
+
+        /** The router's measure when nothing better is known: 4 characters a token. */
+        fun estimate(input: String, output: String) = TokenCount(input.length / 4, output.length / 4, estimated = true)
+    }
+}
+
 
 sealed interface StreamEvent {
     data class Delta(val text: String) : StreamEvent
@@ -30,6 +57,8 @@ sealed interface StreamEvent {
     data class Sent(val bytes: Int) : StreamEvent
     /** The tool calls the model asked for, once the stream has ended (ids are minted by the node). */
     data class Calls(val calls: List<ToolCall>) : StreamEvent
+    /** What the call cost in tokens: meshnode puts `usage` on its finishing chunk, the frontier on a last chunk. */
+    data class Usage(val tokens: TokenCount) : StreamEvent
 }
 
 /** A node's error answer, `{"error":{"message","type","code"}}`, with its HTTP status. */
@@ -64,8 +93,9 @@ class OpenAiClient {
             probe.newCall(Request.Builder().url(node.url + "/mesh/info").get().build()).execute().use { r ->
                 if (!r.isSuccessful) return@use null
                 val o = JSONObject(r.body!!.string())
+                fun int(k: String) = if (o.has(k) && !o.isNull(k)) o.getInt(k) else null
                 MeshInfo(o.optString("device", node.device), o.optString("tier", node.tier), o.optString("model", node.model),
-                    if (o.has("max_num_tokens") && !o.isNull("max_num_tokens")) o.getInt("max_num_tokens") else null, o.optDouble("load", 0.0))
+                    int("max_num_tokens"), o.optDouble("load", 0.0), int("tokens_in"), int("tokens_out"), int("tokens_cached"))
             }
         }.getOrNull()
     }
@@ -123,6 +153,7 @@ class OpenAiClient {
     /** One approved question to the frontier: only this text, never the conversation around it. */
     fun frontier(f: Frontier, question: String): Flow<StreamEvent> {
         val body = JSONObject().put("model", f.model).put("stream", true).put("max_tokens", MAX_TOKENS)
+            .put("stream_options", JSONObject().put("include_usage", true))
             .put("messages", listOf(ChatMessage("user", question)).toJson())
         val req = Request.Builder().url(f.baseUrl.trimEnd('/') + "/chat/completions").header("Authorization", "Bearer ${f.apiKey}")
         return sse(req, body, "frontier")
@@ -148,6 +179,7 @@ class OpenAiClient {
             val source = resp.body!!.source()
             // Streamed tool calls arrive in pieces keyed by index: id and name first, arguments in fragments.
             val ids = sortedMapOf<Int, String>(); val names = sortedMapOf<Int, String>(); val args = sortedMapOf<Int, StringBuilder>()
+            var usage: TokenCount? = null       // meshnode may send it twice (finishing chunk, include_usage)
             while (true) {
                 val line = source.readUtf8Line() ?: break
                 if (!line.startsWith("data:")) continue
@@ -156,6 +188,7 @@ class OpenAiClient {
                 val o = runCatching { JSONObject(data) }.getOrNull() ?: continue
                 o.optJSONObject("error")?.let { throw NodeException("$who: ${it.optString("message", "node error")}", it.optInt("status", 500)) }
                 o.optJSONObject("mesh")?.let { emit(StreamEvent.Meta(it.optString("device", null), it.optString("tier", null))) }
+                o.optJSONObject("usage")?.let { u -> TokenCount.fromUsage(u)?.let { usage = it } }
                 val delta = o.optJSONArray("choices")?.optJSONObject(0)?.optJSONObject("delta")
                 val text = if (delta == null || delta.isNull("content")) "" else delta.optString("content", "")
                 if (text.isNotEmpty()) emit(StreamEvent.Delta(text))
@@ -171,6 +204,7 @@ class OpenAiClient {
                     }
                 }
             }
+            usage?.let { emit(StreamEvent.Usage(it)) }
             if (names.isNotEmpty()) emit(StreamEvent.Calls(names.map { (ix, n) -> ToolCall(ids[ix] ?: ToolCall.newId(), n, args[ix]?.toString() ?: "{}") }))
         }
     }.flowOn(Dispatchers.IO)

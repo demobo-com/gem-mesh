@@ -21,6 +21,8 @@ class MemoryServer(
     port: Int = PORT,
     /** Called after the laptop pushed new events, so the open screen can refresh. */
     private val onPushed: (Int) -> Unit = {},
+    /** Called after every pull or push: the laptop's mirror is in sync (the Mesh page's memory line). */
+    private val onSynced: () -> Unit = {},
 ) : NanoHTTPD(port) {
     private val nsd = context.getSystemService(Context.NSD_SERVICE) as NsdManager
     private var registration: NsdManager.RegistrationListener? = null
@@ -33,6 +35,7 @@ class MemoryServer(
                 val after = session.parms["after"]?.toLongOrNull() ?: 0
                 val limit = (session.parms["limit"]?.toIntOrNull() ?: 500).coerceIn(1, 2000)
                 val (events, last) = store.eventsAfter(after, limit)
+                onSynced()
                 json(JSONObject().put("events", JSONArray(events.map { it.toJson() })).put("last", last))
             }
             session.method == Method.POST && session.uri == "/memory/push" -> {
@@ -42,6 +45,7 @@ class MemoryServer(
                 val n = store.ingest(MemoryStore.eventsFromJson(body.optJSONArray("events") ?: JSONArray()))
                 Log.i(TAG, "push from ${session.remoteIpAddress}: $n new")
                 if (n > 0) onPushed(n)
+                onSynced()
                 json(JSONObject().put("accepted", n))
             }
             else -> newFixedLengthResponse(Response.Status.NOT_FOUND, "application/json", """{"error":{"message":"not found"}}""")
