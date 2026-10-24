@@ -4,14 +4,18 @@ import android.app.ActivityManager
 import android.content.Context
 import android.util.Log
 import com.demobo.mesh.net.ChatMessage
+import com.demobo.mesh.net.TokenCount
 import com.demobo.mesh.policy.ModelSpec
 import com.demobo.mesh.tools.ToolCall
 import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Content
 import com.google.ai.edge.litertlm.Contents
+import com.google.ai.edge.litertlm.Conversation
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
+import com.google.ai.edge.litertlm.ExperimentalApi
+import com.google.ai.edge.litertlm.ExperimentalFlags
 import com.google.ai.edge.litertlm.Message
 import com.google.ai.edge.litertlm.OpenApiTool
 import com.google.ai.edge.litertlm.tool
@@ -29,6 +33,8 @@ import java.io.File
 sealed interface LocalEvent {
     data class Text(val text: String) : LocalEvent
     data class Calls(val calls: List<ToolCall>) : LocalEvent
+    /** What the reply cost in tokens, at its end. */
+    data class Usage(val tokens: TokenCount) : LocalEvent
 }
 
 /**
@@ -88,7 +94,10 @@ class LocalModel(private val context: Context, val spec: ModelSpec) {
      * The GPU backend can initialize and still fail on the first message (no OpenCL, as on the emulator),
      * so a GPU engine must answer one short prompt before it is trusted.
      */
+    @OptIn(ExperimentalApi::class)
     private fun open(backend: Backend, probe: Boolean): Engine {
+        // Benchmark counters give each reply's exact prefill and decode token counts (TokenCount on the badge).
+        ExperimentalFlags.enableBenchmark = true
         // E2B and E4B carry an image encoder: open with vision for look_at_image, and without it if that fails.
         for (withVision in listOf(true, false)) {
             val e = Engine(EngineConfig(modelPath = file.path, backend = backend, visionBackend = if (withVision) backend else null,
@@ -145,14 +154,30 @@ class LocalModel(private val context: Context, val spec: ModelSpec) {
             )
             requireNotNull(engine) { "local model not loaded" }.createConversation(config).use { conv ->
                 val calls = mutableListOf<ToolCall>()
+                val reply = StringBuilder()
                 conv.sendMessageAsync(toMessage(messages.last())).collect { m ->
-                    m.text().takeIf { it.isNotEmpty() }?.let { emit(LocalEvent.Text(it)) }
+                    m.text().takeIf { it.isNotEmpty() }?.let { reply.append(it); emit(LocalEvent.Text(it)) }
                     m.toolCalls.forEach { c -> calls += ToolCall(ToolCall.newId(), c.name, JSONObject(c.arguments).toString()) }
                 }
+                tokens(conv, reply.toString(), calls)?.let { emit(LocalEvent.Usage(it)) }
                 if (calls.isNotEmpty()) emit(LocalEvent.Calls(calls))
             }
         }
     }.flowOn(Dispatchers.IO)
+
+    /**
+     * One reply's tokens. A fresh conversation per turn, so nothing was cached: the benchmark counters are exact;
+     * without them the conversation's size is split by estimating the reply at 4 characters a token.
+     */
+    @OptIn(ExperimentalApi::class)
+    private fun tokens(conv: Conversation, reply: String, calls: List<ToolCall>): TokenCount? {
+        runCatching { conv.getBenchmarkInfo() }.getOrNull()?.let { b ->
+            if (b.lastPrefillTokenCount + b.lastDecodeTokenCount > 0) return TokenCount(b.lastPrefillTokenCount, b.lastDecodeTokenCount)
+        }
+        val total = runCatching { conv.getTokenCount() }.getOrNull()?.takeIf { it > 0 } ?: return null
+        val out = (reply.length + calls.sumOf { it.name.length + it.arguments.length }) / 4
+        return TokenCount(maxOf(0, total - out), minOf(out, total), estimated = true)
+    }
 
     private fun Message.text(): String = contents.contents.filterIsInstance<Content.Text>().joinToString("") { it.text }
 

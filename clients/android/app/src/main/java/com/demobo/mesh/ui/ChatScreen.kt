@@ -50,6 +50,9 @@ import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
@@ -95,7 +98,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun ChatScreen(state: UiState, vm: ChatViewModel, openSettings: () -> Unit, scan: () -> Unit) {
+fun ChatScreen(state: UiState, vm: ChatViewModel, openSettings: () -> Unit, scan: () -> Unit, openMesh: () -> Unit) {
     val list = rememberLazyListState()
     val last = state.messages.lastOrNull()
     val drawer = rememberDrawerState(DrawerValue.Closed)
@@ -109,7 +112,7 @@ fun ChatScreen(state: UiState, vm: ChatViewModel, openSettings: () -> Unit, scan
         drawerState = drawer,
         drawerContent = {
             Conversations(state, onOpen = { vm.openSession(it); scope.launch { drawer.close() } },
-                onNew = { vm.newChat(); scope.launch { drawer.close() } })
+                onNew = { vm.newChat(); scope.launch { drawer.close() } }, onForget = vm::forgetSession)
         },
     ) {
         Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).systemBarsPadding().imePadding()
@@ -118,7 +121,7 @@ fun ChatScreen(state: UiState, vm: ChatViewModel, openSettings: () -> Unit, scan
                 openList = { scope.launch { drawer.open() } },
                 onNewChat = vm::newChat, canStartNew = state.messages.isNotEmpty() && !state.busy, openSettings = openSettings,
             )
-            TierStrip(state)
+            TierStrip(state, openMesh)
             AnimatedVisibility(visible = state.model !is ModelState.Ready) {
                 ModelCard(state.model, state.modelLabel, onRetry = vm::prepareModel, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp), onMobileData = vm::downloadOnMobileData)
             }
@@ -152,8 +155,9 @@ fun ChatScreen(state: UiState, vm: ChatViewModel, openSettings: () -> Unit, scan
 }
 
 /** Every conversation on this phone, including those the laptop's mirror pushed here. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun Conversations(state: UiState, onOpen: (String) -> Unit, onNew: () -> Unit) {
+private fun Conversations(state: UiState, onOpen: (String) -> Unit, onNew: () -> Unit, onForget: (String, String) -> Unit) {
     val day = remember { java.text.SimpleDateFormat("d MMM HH:mm", java.util.Locale.getDefault()) }
     ModalDrawerSheet(Modifier.widthIn(max = 320.dp)) {
         Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 16.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -161,7 +165,7 @@ private fun Conversations(state: UiState, onOpen: (String) -> Unit, onNew: () ->
             IconButton(onClick = onNew, enabled = !state.busy) { Icon(Icons.Filled.Add, contentDescription = "New chat") }
         }
         Text(
-            "Kept on this phone and synced with your Mac when it is on the same network.",
+            "Kept on this phone and synced with your Mac when it is on the same network. Swipe one left to forget it.",
             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 20.dp).padding(bottom = 8.dp),
         )
@@ -172,6 +176,14 @@ private fun Conversations(state: UiState, onOpen: (String) -> Unit, onNew: () ->
         LazyColumn {
             items(state.sessions, key = { it.session }) { s ->
                 val elsewhere = s.devices - state.device
+                // Forgetting is a forget event: gone here at once, and on the Mac at its next sync (PROTOCOL §4).
+                val swipe = rememberSwipeToDismissBoxState(confirmValueChange = { v ->
+                    (v == SwipeToDismissBoxValue.EndToStart && !state.busy).also { if (it) onForget(s.session, s.title) }
+                })
+                SwipeToDismissBox(swipe, enableDismissFromStartToEnd = false, backgroundContent = {
+                    Box(Modifier.fillMaxSize().padding(horizontal = 12.dp).clip(CircleShape).background(MaterialTheme.colorScheme.error).padding(horizontal = 20.dp),
+                        contentAlignment = Alignment.CenterEnd) { Text("Forget", color = MaterialTheme.colorScheme.onError, style = MaterialTheme.typography.labelLarge) }
+                }) {
                 NavigationDrawerItem(
                     label = {
                         Column(Modifier.padding(vertical = 4.dp)) {
@@ -187,6 +199,7 @@ private fun Conversations(state: UiState, onOpen: (String) -> Unit, onNew: () ->
                     onClick = { onOpen(s.session) },
                     modifier = Modifier.padding(horizontal = 12.dp),
                 )
+                }
             }
         }
     }
@@ -217,7 +230,7 @@ private fun TopBar(openList: () -> Unit, onNewChat: () -> Unit, canStartNew: Boo
 
 /** The phone and every node, live: coloured while /health answers, grey when the node is away or asleep. */
 @Composable
-private fun TierStrip(state: UiState) {
+private fun TierStrip(state: UiState, openMesh: () -> Unit) {
     val tiers = MeshTheme.tiers
     Row(
         Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 6.dp),
@@ -234,6 +247,9 @@ private fun TierStrip(state: UiState) {
             StatusPill("T4 Gemini", if (state.frontier.apiKey.isBlank()) "no key" else "asks first",
                 if (state.frontier.apiKey.isBlank()) tiers.off else tiers.cloud)
         }
+        // The control plane: the live map, tokens by tier, sessions, memory.
+        Text("Mesh ›", style = MaterialTheme.typography.labelLarge, color = tiers.mesh,
+            modifier = Modifier.clip(CircleShape).clickable(onClick = openMesh).padding(horizontal = 12.dp, vertical = 7.dp).testTag("openMesh"))
     }
 }
 
@@ -315,14 +331,14 @@ private fun EmptyState(state: UiState, onPick: (String) -> Unit, scan: () -> Uni
     }
 }
 
-/** First launch: no Mac yet. The pairing code comes from `gemma-mesh pair` on the Mac. */
+/** First launch: no Mac yet. The pairing code comes from `gem-mesh pair` on the Mac. */
 @Composable
 fun ConnectCard(scan: () -> Unit, openSettings: () -> Unit) {
     Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
             Text("Connect to your Mac", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(4.dp))
-            Text("On the Mac, run gemma-mesh pair and scan the code it shows. On the same Wi-Fi the phone usually finds the Mac by itself.",
+            Text("On the Mac, run gem-mesh pair and scan the code it shows. On the same Wi-Fi the phone usually finds the Mac by itself.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
