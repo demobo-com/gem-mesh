@@ -34,6 +34,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Stop
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -545,6 +547,11 @@ private fun Composer(state: UiState, vm: ChatViewModel) {
     val pickFiles = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         if (uris.isNotEmpty()) vm.attachFiles(uris, input)
     }
+    // Photos go through the system photo picker, which has its own close button; Files opens the document browser.
+    val pickPhotos = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(10)) { uris ->
+        if (uris.isNotEmpty()) vm.attachFiles(uris, input)
+    }
+    var attachMenu by remember { mutableStateOf(false) }
     fun startRecording() { recording = recorder.start() }
     val askMic = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> if (granted) startRecording() }
     fun toggleMic() {
@@ -577,8 +584,27 @@ private fun Composer(state: UiState, vm: ChatViewModel) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 8.dp)) {
                 RouteSelector(state, vm)
                 Spacer(Modifier.weight(1f))
-                IconButton(onClick = { pickFiles.launch(arrayOf("*/*")) }, enabled = !recording, modifier = Modifier.testTag("attach")) {
-                    Icon(Icons.Filled.AttachFile, contentDescription = "Attach files")
+                Box {
+                    IconButton(onClick = { attachMenu = true }, enabled = !recording, modifier = Modifier.testTag("attach")) {
+                        Icon(Icons.Filled.AttachFile, contentDescription = "Attach files")
+                    }
+                    DropdownMenu(expanded = attachMenu, onDismissRequest = { attachMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Photos") },
+                            leadingIcon = { Icon(Icons.Filled.Image, contentDescription = null) },
+                            onClick = {
+                                attachMenu = false
+                                pickPhotos.launch(androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            },
+                            modifier = Modifier.testTag("attach-photos"),
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Files") },
+                            leadingIcon = { Icon(Icons.Filled.Description, contentDescription = null) },
+                            onClick = { attachMenu = false; pickFiles.launch(arrayOf("*/*")) },
+                            modifier = Modifier.testTag("attach-files"),
+                        )
+                    }
                 }
                 IconButton(onClick = ::toggleMic, enabled = !state.transcribing, modifier = Modifier.testTag("mic")) {
                     if (state.transcribing) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
