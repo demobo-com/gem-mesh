@@ -69,7 +69,8 @@ the commands. To rehearse without changing the demo files:
 ### 2. Your Android phone
 
 The app runs Gemma 4 E4B on the phone (E2B with less memory), holds your memory, edits photos on the device, and
-sends bigger or private work to your Mac. Until there is a release APK, install it over USB:
+sends bigger or private work to your Mac. Attach files from the phone with the paperclip, and talk instead of typing with
+the microphone: the phone's own model turns speech into text, so your voice never leaves it. Until there is a release APK, install it over USB:
 
 1. On the Mac, once: `brew install --cask temurin@17 android-platform-tools`, and install
    [Android Studio](https://developer.android.com/studio) once for the Android SDK.
