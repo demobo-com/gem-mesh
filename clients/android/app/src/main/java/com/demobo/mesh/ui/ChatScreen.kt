@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Stop
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -568,6 +569,24 @@ private fun Composer(state: UiState, vm: ChatViewModel) {
         if (uris.isNotEmpty()) vm.attachFiles(uris, input)
     }
     var attachMenu by remember { mutableStateOf(false) }
+    // The camera writes into a workspace file; its path survives the app being stopped while the camera is open.
+    var shot by rememberSaveable { mutableStateOf<String?>(null) }
+    val takePhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
+        shot?.let { vm.photoTaken(java.io.File(it), ok, input) }
+        shot = null
+    }
+    fun openCamera() {
+        val f = vm.newPhotoFile()
+        shot = f.path
+        takePhoto.launch(androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.files", f))
+    }
+    // The app declares CAMERA (for the pairing QR), so Android refuses the camera app until it is granted.
+    val askCamera = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> if (granted) openCamera() }
+    fun camera() {
+        val ok = androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.CAMERA) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (ok) openCamera() else askCamera.launch(android.Manifest.permission.CAMERA)
+    }
     fun startRecording() { recording = recorder.start() }
     val askMic = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> if (granted) startRecording() }
     fun toggleMic() {
@@ -621,6 +640,9 @@ private fun Composer(state: UiState, vm: ChatViewModel) {
                             modifier = Modifier.testTag("attach-files"),
                         )
                     }
+                }
+                IconButton(onClick = ::camera, enabled = !recording, modifier = Modifier.testTag("camera")) {
+                    Icon(Icons.Filled.PhotoCamera, contentDescription = "Take a photo")
                 }
                 IconButton(onClick = ::toggleMic, enabled = !state.transcribing, modifier = Modifier.testTag("mic")) {
                     if (state.transcribing) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
