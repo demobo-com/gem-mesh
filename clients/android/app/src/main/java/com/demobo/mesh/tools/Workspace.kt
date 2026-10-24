@@ -147,6 +147,21 @@ class Workspace(context: Context) {
 
         /** File names in a message that exist in the workspace (attach_mentions in main.py). */
         fun mentioned(prompt: String, ws: Workspace): List<File> =
-            FILE_NAME.findAll(prompt).map { it.value }.distinct().mapNotNull { n -> File(ws.dir, n).takeIf { it.isFile } }.toList()
+            named(prompt, ws.files().map { it.name }).map { File(ws.dir, it) }
+
+        /**
+         * Which of `names` the message mentions: by file name, or spoken as words ("my negotiation notes" for
+         * negotiation-notes.md), since voice input never says the extension. A spoken name needs two words or more,
+         * so a bare "notes" attaches nothing.
+         */
+        fun named(prompt: String, names: List<String>): List<String> {
+            val typed = FILE_NAME.findAll(prompt).map { it.value }.filter { it in names }
+            val low = prompt.lowercase()
+            val spoken = names.filter { FILE_NAME.matches(it) }.filter { n ->
+                val words = n.substringBeforeLast('.').lowercase().split('-', '_', ' ', '.').filter { it.isNotEmpty() }
+                words.size >= 2 && Regex("\\b" + words.joinToString("[\\s_-]+") { Regex.escape(it) } + "\\b").containsMatchIn(low)
+            }
+            return (typed + spoken).distinct().toList()
+        }
     }
 }

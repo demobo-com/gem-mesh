@@ -56,6 +56,26 @@ If the final terms break any of these, we do not sign. We go to Harborline inste
 - **Extend runway.** Cut the Corvid-2 run to a smaller model and stretch the cash to 8 months. Last resort; it would
   cost us the lead on long context.
 
+## Where things stand
+
+| Date | What happened |
+|---|---|
+| September 30 | First pitch to Dana. She asked for the eval report and the compute contract. |
+| October 9 | Partner meeting at Northwind. Positive; they asked for three customer references. |
+| October 16 | References done: the law firm, the bank and the insurer all spoke to Dana. |
+| October 21 | Call with Dana. Agreed in principle on $40M, 30-day no-shop and the 10% pool. |
+| October 24 | Term sheet received: $160M pre, 1x non-participating, one board seat. Meeting at AGI House today. |
+| October 31 | Term sheet expires if we don't sign. |
+
+## Agreed so far, and still open
+
+- **Agreed on the October 21 call:** the amount ($40M, of which Northwind takes $30M), the 30-day no-shop, the 10%
+  option pool, broad-based weighted average anti-dilution, and legal fees capped at $50K.
+- **Still open:** the final valuation, the board, and anything Dana adds at the meeting. Expect her to come back with a
+  higher headline price and new structure attached. That is her pattern (see below).
+- **Our position if she does:** check every new term against the walk-away table above before reacting. Never agree
+  to anything in the room; say we'll come back tonight.
+
 ## About Dana and Northwind
 
 - Dana is a general partner at Northwind Ventures and led its last three AI infrastructure deals.

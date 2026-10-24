@@ -1,7 +1,8 @@
 # demo
 
 `files/` is the sandbox for demos. Mention a file by name in `gem-mesh` or `gem-mesh-mobile` and it is
-attached to your question automatically:
+attached to your question automatically (the Android app also attaches a file named as spoken words, such as "negotiation
+notes" for negotiation-notes.md):
 
     What is unusual in this lease acme-lease.txt
     Summarize hr-review-notes.md in three bullets
@@ -31,3 +32,7 @@ Use a copy for rehearsals so the originals stay put: `MESH_FILES_DIR=/tmp/demo-f
 | q3-update.pdf | Work · public product update, 2 pages | PDF stamp, page edits, word edits |
 | milo-park-1/2/3.jpg | Companion · evening photos of the dog, a bit dark, with Pixel 11 camera data and the home GPS location | photo vision and editing on the phone; location removed before sharing |
 | city-sunset.png | Generic image | resize, caption, convert |
+| key-numbers.md | AGI House demo (`demo/script.md`) · the founder's numbers, short | phone |
+| eval-report.md | AGI House demo · private benchmark report, ~1.7K tokens | sensitive, long → laptop |
+| negotiation-notes.md | AGI House demo · walk-away terms, ~1.6K tokens | sensitive, long → laptop |
+| term-sheet.md | AGI House demo · Series A term sheet; with the negotiation notes, ~3.1K tokens | sensitive, heavy → workstation |

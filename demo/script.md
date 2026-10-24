@@ -88,8 +88,8 @@ Photograph it.*
 > "Back at the office, the workstation joins my mesh. Dana raised my valuation by $20 million. Is that a better deal?
 > That isn't a lookup. It's math across clauses."
 
-🎙️ **Priya:** *"Northwind raised our valuation. Is it actually better? Show me what common gets if we're acquired for
-two hundred million."*
+🎙️ **Priya:** *"Northwind raised our valuation. Is it actually better? Using the term sheet and my negotiation notes,
+show me what common gets if we're acquired for two hundred million."*
 
 📱 *Workstation · 26B · thinking…* The judges watch it reason. Then:
 
@@ -124,13 +124,38 @@ two hundred million."*
 
 ## Props and numbers (they must match the script)
 
-| Item | Content |
-|---|---|
-| Notes on the phone | Burn $3.2M a month · cash $16M → 5 months runway · ARR $14M |
-| Printed term sheet | $40M raise · $160M pre · 10% option pool · 1x non-participating · 1 board seat |
-| Whiteboard | $180M pre · 1.5x participating · 2 board seats |
-| Negotiation notes (on the laptop) | Pre-money at least $150M · 1x non-participating only · at most 1 investor board seat · pool at most 12% |
-| Internal eval report (on the laptop) | Corvid's private benchmark results versus Claude and GPT, several pages long |
+| Item | File in the phone's workspace | Content |
+|---|---|---|
+| Notes on the phone | `key-numbers.md` | Burn $3.2M a month · cash $16M → 5 months runway · ARR $14M |
+| Printed term sheet | `term-sheet.md` (print it), then a photo of the printout | $40M raise · $160M pre · 10% option pool · 1x non-participating · 1 board seat |
+| Whiteboard | a photo | $180M pre · 1.5x participating · 2 board seats |
+| Negotiation notes | `negotiation-notes.md` | Pre-money at least $150M · 1x non-participating only · at most 1 investor board seat · pool at most 12% |
+| Internal eval report | `eval-report.md` | Corvid's private benchmark results versus Claude and GPT, several pages long |
+
+The four documents are in `demo/files/`, so **Settings → Demo files** puts them on the phone. Attach each photo with
+the paperclip in the same message as the question: the paperclip writes the photo's name (`photo-20261024-…jpg`) into
+the message box, which is how the model knows which photo to look at. The microphone also writes into the message box,
+so glance at the words before sending: the document names below must come through as said.
+
+## Why each scene lands on its device
+
+The router picks the device by the size of the prompt plus the conversation, about 4 characters per token
+(`policy/tiers.yaml`): up to 1,500 tokens stays on the phone, above that goes to the laptop, above 3,000 prefers the
+workstation. A document goes with the prompt when it is named, so say its name as written: "key numbers", "eval report",
+"negotiation notes", "term sheet".
+
+| Prompt | Documents attached | Tokens | Device |
+|---|---|---|---|
+| Key numbers | `key-numbers.md` | ~600 | Phone (and Airplane Mode leaves only the phone) |
+| Term sheet photo | none (the phone looks at the photo) | ~600 | Phone |
+| Eval report talking points | `eval-report.md` | ~2,100 | Laptop |
+| Whiteboard vs. negotiation notes | `negotiation-notes.md` | ~2,000 in a fresh chat | Laptop (the workstation isn't there yet) |
+| Is it actually better? | `term-sheet.md`, `negotiation-notes.md` | ~3,500 in a fresh chat | Workstation |
+| Board memo | none (follows the previous answer) | ~3,500 | Workstation |
+
+Each line holds on its own, in a fresh chat, so the bench version routes the same way. Checked by
+`clients/android/app/src/test/java/com/demobo/mesh/route/AgiHouseDemoTest.kt`. If you edit the documents, keep the eval
+report and the negotiation notes above 6,000 characters each, and the term sheet plus the notes above 12,000.
 
 **Answer key, if a judge checks the math:**
 

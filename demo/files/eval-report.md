@@ -67,6 +67,33 @@ At the blended price, Corvid-1 is about 6x cheaper than Claude and 5.7x cheaper 
 3. **Tool use.** 3.5 points behind on tau-bench, mostly from policy mistakes in refund flows. A fine-tuning fix is in
    testing.
 
+## Long-document results by domain
+
+| Domain (internal long-doc QA) | Documents | Corvid-1 | Claude | GPT |
+|---|---|---|---|---|
+| Commercial contracts | 32 | 91.4 | 86.0 | 85.2 |
+| 10-K and 10-Q filings | 28 | 89.7 | 85.9 | 84.8 |
+| Clinical trial protocols | 20 | 86.1 | 82.3 | 82.0 |
+| Insurance policies | 16 | 86.8 | 81.5 | 81.1 |
+
+The lead holds in every domain. It is widest on contracts, where answers depend on cross-references between distant
+clauses, and narrowest on clinical protocols, where all three models miss the same dosing tables.
+
+## Customer evaluations
+
+- **A top-10 US law firm** ran a 6-week bake-off on 400 of its own merger agreements. Corvid-1 was preferred by its
+  associates in 61% of blind comparisons with Claude and 64% with GPT. Contract signed in September: $1.2M a year.
+- **A regional bank** tested loan-file review. Accuracy matched the frontier models; cost was 81% lower. Pilot
+  extended to production.
+- **An insurer** found Corvid-1 slower to adopt its claims-handling style guide. A fine-tune fixed it in two weeks.
+
+## Changes since version 0.8
+
+- Added RULER 128K and the insurance-policy domain.
+- Re-ran SWE-bench Verified with the fixed harness: Corvid-1 went from 55.9 to 58.2, the frontier models were
+  unchanged.
+- Removed HumanEval: every model now scores above 95, so it no longer separates them.
+
 ## Safety and reliability
 
 - Refusal rate on our benign-but-sensitive set (medical, legal, security questions that should be answered): 2.1%,
