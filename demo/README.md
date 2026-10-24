@@ -36,3 +36,5 @@ Use a copy for rehearsals so the originals stay put: `MESH_FILES_DIR=/tmp/demo-f
 | eval-report.md | AGI House demo · private benchmark report, ~1.7K tokens | sensitive, long → laptop |
 | negotiation-notes.md | AGI House demo · walk-away terms, ~1.6K tokens | sensitive, long → laptop |
 | term-sheet.md | AGI House demo · Series A term sheet; with the negotiation notes, ~3.1K tokens | sensitive, heavy → workstation |
+| whiteboard.jpg | AGI House demo · stand-in photo of Dana's whiteboard ($180M pre, 1.5x participating, 2 seats) | photo vision on the phone, answer on the laptop |
+| term-sheet-photo.jpg | AGI House demo · stand-in photo of the printed term sheet's first page | photo vision on the phone |

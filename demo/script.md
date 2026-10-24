@@ -127,14 +127,16 @@ show me what common gets if we're acquired for two hundred million."*
 | Item | File in the phone's workspace | Content |
 |---|---|---|
 | Notes on the phone | `key-numbers.md` | Burn $3.2M a month · cash $16M → 5 months runway · ARR $14M |
-| Printed term sheet | `term-sheet.md` (print it), then a photo of the printout | $40M raise · $160M pre · 10% option pool · 1x non-participating · 1 board seat |
-| Whiteboard | a photo | $180M pre · 1.5x participating · 2 board seats |
+| Printed term sheet | `term-sheet.md` (print it), then a photo of the printout; stand-in `term-sheet-photo.jpg` | $40M raise · $160M pre · 10% option pool · 1x non-participating · 1 board seat |
+| Whiteboard | a photo; stand-in `whiteboard.jpg` | $180M pre · 1.5x participating · 2 board seats |
 | Negotiation notes | `negotiation-notes.md` | Pre-money at least $150M · 1x non-participating only · at most 1 investor board seat · pool at most 12% |
 | Internal eval report | `eval-report.md` | Corvid's private benchmark results versus Claude and GPT, several pages long |
 
-The four documents are in `demo/files/`, so **Settings → Demo files** puts them on the phone. Attach each photo with
-the paperclip in the same message as the question: the paperclip writes the photo's name (`photo-20261024-…jpg`) into
-the message box, which is how the model knows which photo to look at. The microphone also writes into the message box,
+The four documents and the two stand-in photos are in `demo/files/`, so **Settings → Demo files** puts them on the
+phone. Use the stand-ins to rehearse, or on stage if a live photo comes out badly: attach them with **paperclip → Files**,
+which keeps their names. Attach each photo with the paperclip in the same message as the question: the paperclip
+writes the photo's name (`photo-20261024-…jpg`, or `whiteboard.jpg` for a stand-in) into the message box, which is how
+the model knows which photo to look at. The microphone also writes into the message box,
 so glance at the words before sending: the document names below must come through as said.
 
 ## Why each scene lands on its device
