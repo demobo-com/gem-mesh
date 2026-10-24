@@ -456,12 +456,17 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     private fun copyIn(uris: List<android.net.Uri>): List<String> {
         val cr = getApplication<Application>().contentResolver
         val names = mutableListOf<String>()
-        for (u in uris) {
-            // Ask for the original bytes, so a photo keeps its EXIF location for the app to show and remove.
-            val src = runCatching { android.provider.MediaStore.setRequireOriginal(u) }.getOrDefault(u)
-            val name = cr.query(u, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+        val stamp = java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(java.util.Date())
+        for ((i, u) in uris.withIndex()) {
+            // The photo picker hides real names ("25.jpg") and refuses requireOriginal; name its photos by time instead.
+            val picker = u.authority == "media" && u.pathSegments.firstOrNull() == "picker"
+            // Elsewhere ask for the original bytes, so a photo keeps its EXIF location for the app to show and remove.
+            val src = if (picker) u else runCatching { android.provider.MediaStore.setRequireOriginal(u) }.getOrDefault(u)
+            val shown = cr.query(u, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
                 if (c.moveToFirst()) c.getString(0) else null
-            } ?: "file-${System.currentTimeMillis()}"
+            }
+            val name = if (picker) "photo-$stamp${if (uris.size > 1) "-${i + 1}" else ""}.${shown?.substringAfterLast('.', "jpg") ?: "jpg"}"
+                else shown ?: "file-${System.currentTimeMillis()}"
             val safe = name.replace(Regex("[^A-Za-z0-9._-]"), "-").trimStart('.', '-').ifEmpty { "file" }
             runCatching { cr.openInputStream(src) }.getOrNull()?.use { inp -> java.io.File(workspace.dir, safe).outputStream().use { inp.copyTo(it) } }
                 ?: cr.openInputStream(u)?.use { inp -> java.io.File(workspace.dir, safe).outputStream().use { inp.copyTo(it) } }
