@@ -11,11 +11,20 @@ import socket
 import threading
 import time
 
-from zeroconf import IPVersion, ServiceBrowser, ServiceInfo, ServiceStateChange, Zeroconf
+from zeroconf import InterfaceChoice, IPVersion, ServiceBrowser, ServiceInfo, ServiceStateChange, Zeroconf
 
 from .nodes import LocalNode, NodeInfo, RemoteNode
 
 SERVICE_TYPE = "_local-ai._tcp.local."
+
+
+def _zeroconf() -> Zeroconf:
+    """One socket per interface; when an interface's port 5353 is taken (EADDRINUSE on some Macs), the default
+    interface only, which still reaches the LAN."""
+    try:
+        return Zeroconf(ip_version=IPVersion.V4Only)
+    except OSError:
+        return Zeroconf(interfaces=InterfaceChoice.Default, ip_version=IPVersion.V4Only)
 
 
 def _own_ips() -> list[str]:
@@ -66,7 +75,7 @@ class Advertiser:
 
     def start(self) -> None:
         self.ips = _own_ips()
-        self.zc = Zeroconf(ip_version=IPVersion.V4Only)
+        self.zc = _zeroconf()
         self.info = self._service(self.ips)
         self.zc.register_service(self.info, allow_name_change=True)
         threading.Thread(target=self._refresh, daemon=True).start()
@@ -80,7 +89,7 @@ class Advertiser:
                 if ips != self.ips:
                     self.zc.unregister_service(self.info)
                     self.zc.close()
-                    self.zc = Zeroconf(ip_version=IPVersion.V4Only)
+                    self.zc = _zeroconf()
                     self.ips = ips
                     self.info = self._service(ips)
                     self.zc.register_service(self.info, allow_name_change=True)
@@ -177,7 +186,7 @@ class NodeTable:
                 threading.Thread(target=node.health, daemon=True).start()   # reachable as soon as it answers
 
     def start(self) -> "NodeTable":
-        self.zc = Zeroconf(ip_version=IPVersion.V4Only)
+        self.zc = _zeroconf()
         self._browser = ServiceBrowser(self.zc, SERVICE_TYPE, handlers=[self._on_change])
         threading.Thread(target=self._poll, daemon=True).start()
         return self
