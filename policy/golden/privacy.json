@@ -1,0 +1,164 @@
+{
+  "about": "Rules only (rules.yaml): no classifier. 'rules' lists the rule names that fire; 'custom term' means a term from rules.yaml terms.",
+  "cases": [
+    {
+      "text": "What is 12 times 7?",
+      "why": "plain public question",
+      "expect": {
+        "privacy": "public",
+        "rules": []
+      }
+    },
+    {
+      "text": "Explain how a heat pump works.",
+      "why": "plain public question",
+      "expect": {
+        "privacy": "public",
+        "rules": []
+      }
+    },
+    {
+      "text": "Email bob@example.com about lunch",
+      "why": "email address",
+      "expect": {
+        "privacy": "sensitive",
+        "rules": [
+          "email"
+        ]
+      }
+    },
+    {
+      "text": "Call me on +1 415 555 0134 after six",
+      "why": "phone number",
+      "expect": {
+        "privacy": "sensitive",
+        "rules": [
+          "phone"
+        ]
+      }
+    },
+    {
+      "text": "Summarize the Acme lease",
+      "why": "custom term (client name)",
+      "expect": {
+        "privacy": "sensitive",
+        "rules": [
+          "custom term"
+        ]
+      }
+    },
+    {
+      "text": "Draft a note to Northwind about the renewal",
+      "why": "custom term",
+      "expect": {
+        "privacy": "sensitive",
+        "rules": [
+          "custom term"
+        ]
+      }
+    },
+    {
+      "text": "read ~/matters/acme/x.pdf",
+      "why": "private path and client",
+      "expect": {
+        "privacy": "sensitive",
+        "rules": [
+          "custom term",
+          "private-path"
+        ]
+      }
+    },
+    {
+      "text": "Status of case no. 48213?",
+      "why": "case number",
+      "expect": {
+        "privacy": "sensitive",
+        "rules": [
+          "case-number"
+        ]
+      }
+    },
+    {
+      "text": "Current salary $118,000.",
+      "why": "salary with pay word",
+      "expect": {
+        "privacy": "sensitive",
+        "rules": [
+          "salary"
+        ]
+      }
+    },
+    {
+      "text": "a one-time bonus of $5,000",
+      "why": "bonus",
+      "expect": {
+        "privacy": "sensitive",
+        "rules": [
+          "salary"
+        ]
+      }
+    },
+    {
+      "text": "She earns 85k",
+      "why": "salary shorthand",
+      "expect": {
+        "privacy": "sensitive",
+        "rules": [
+          "salary"
+        ]
+      }
+    },
+    {
+      "text": "paid $28 per hour",
+      "why": "hourly pay",
+      "expect": {
+        "privacy": "sensitive",
+        "rules": [
+          "salary"
+        ]
+      }
+    },
+    {
+      "text": "The Tenant shall pay the initial annual Rent of $684,000 yearly in advance",
+      "why": "rent is not a salary",
+      "expect": {
+        "privacy": "public",
+        "rules": []
+      }
+    },
+    {
+      "text": "Amount due by 15 November 2026: $3,900.00",
+      "why": "invoice total is not a salary",
+      "expect": {
+        "privacy": "public",
+        "rules": []
+      }
+    },
+    {
+      "text": "payment of the Landlord's out-of-hours charge of $180 per hour",
+      "why": "a building charge is not pay",
+      "expect": {
+        "privacy": "public",
+        "rules": []
+      }
+    },
+    {
+      "text": "Tickets cost $25 each",
+      "why": "price",
+      "expect": {
+        "privacy": "public",
+        "rules": []
+      }
+    },
+    {
+      "text": "my api key is sk-ant-abc123def456ghi789jkl",
+      "why": "secret key",
+      "expect": {
+        "privacy": "sensitive",
+        "rules": [
+          "api-key"
+        ]
+      }
+    }
+  ]
+}

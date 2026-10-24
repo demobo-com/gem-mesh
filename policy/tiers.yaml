@@ -1,0 +1,36 @@
+# Tier ladder and routing windows. Ranks order the tiers; the router picks the lowest reachable tier inside the window.
+tiers:
+  T0: { rank: 0, label: phone }
+  T1: { rank: 1, label: laptop }
+  T2: { rank: 2, label: workstation }
+  T3: { rank: 3, label: server }
+  T4: { rank: 4, label: frontier, frontier: true }
+
+# Window per privacy class. T4 is never inside a window; it is offered only when `frontier: ask` and the class is public.
+windows:
+  public:    { floor: T0, ceiling: T3 }
+  sensitive: { floor: T0, ceiling: T3 }
+
+# Difficulty raises the floor. Token estimates are prompt plus attached context.
+difficulty:
+  long_prompt_tokens: 1500      # above this the floor becomes T1
+  heavy_tokens: 3000            # above this the workstation is preferred (same 26B, ~3x faster, bigger window)
+
+# never | ask
+frontier: ask
+
+# Outbound web access for local agents (search, fetch): never | public.
+# `public`: available in every conversation; only the query or URL leaves, and each one is checked against the rules
+# before it is sent (a hit is blocked). Strictness belongs to inference: sensitive conversations never go to the frontier.
+web: public
+
+# Effort: how hard each tier works on the same model. "think" turns on the model's reasoning before it answers
+# (on the 5090's 26B: a trick question went from 0.5 s to 3.7 s, answer still right). Override per chat with /think.
+effort:
+  T2: think
+  T3: think
+  # heavy: think   # uncomment: heavy work also thinks when it falls back to the laptop (about 2x slower on a MacBook)
+
+# Classifier: when the rules find nothing, a local model labels the conversation (unknown counts as sensitive).
+# Runs on the phone's own model or the laptop's node, never outside the mesh. Prompt: policy/classifier.txt.
+classifier: on

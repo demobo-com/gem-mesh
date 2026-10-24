@@ -1,0 +1,289 @@
+{
+  "about": "Router decisions with the classifier off. Token estimate: len(text) // 4. Nodes all reachable, load 0. chosen null means the request is queued until a node of tier queue_needs or higher is reachable.",
+  "cases": [
+    {
+      "name": "short public, phone and laptop \u2192 phone",
+      "prompt": "What is 12 times 7?",
+      "context_tokens": 0,
+      "nodes": [
+        {
+          "device": "phone",
+          "tier": "T0",
+          "model": "gemma4-e4b",
+          "local": true,
+          "key": "phone"
+        },
+        {
+          "device": "mac",
+          "tier": "T1",
+          "model": "gemma4-26b",
+          "key": "mac"
+        }
+      ],
+      "expect": {
+        "privacy": "public",
+        "chosen": "phone",
+        "queue_needs": null,
+        "floor": "T0",
+        "ceiling": "T3"
+      }
+    },
+    {
+      "name": "short sensitive \u2192 phone",
+      "prompt": "Email bob@example.com about lunch",
+      "context_tokens": 0,
+      "nodes": [
+        {
+          "device": "phone",
+          "tier": "T0",
+          "model": "gemma4-e4b",
+          "local": true,
+          "key": "phone"
+        },
+        {
+          "device": "mac",
+          "tier": "T1",
+          "model": "gemma4-26b",
+          "key": "mac"
+        },
+        {
+          "device": "ws",
+          "tier": "T2",
+          "model": "gemma4-26b",
+          "key": "ws"
+        }
+      ],
+      "expect": {
+        "privacy": "sensitive",
+        "chosen": "phone",
+        "queue_needs": null,
+        "floor": "T0",
+        "ceiling": "T3"
+      }
+    },
+    {
+      "name": "client term, laptop and workstation \u2192 laptop",
+      "prompt": "Summarize the Acme lease",
+      "context_tokens": 0,
+      "nodes": [
+        {
+          "device": "mac",
+          "tier": "T1",
+          "model": "gemma4-26b",
+          "key": "mac"
+        },
+        {
+          "device": "ws",
+          "tier": "T2",
+          "model": "gemma4-26b",
+          "key": "ws"
+        }
+      ],
+      "expect": {
+        "privacy": "sensitive",
+        "chosen": "mac",
+        "queue_needs": null,
+        "floor": "T0",
+        "ceiling": "T3"
+      }
+    },
+    {
+      "name": "long \u2192 laptop",
+      "prompt": {
+        "repeat": "x ",
+        "times": 4000
+      },
+      "context_tokens": 0,
+      "nodes": [
+        {
+          "device": "phone",
+          "tier": "T0",
+          "model": "gemma4-e4b",
+          "local": true,
+          "key": "phone"
+        },
+        {
+          "device": "mac",
+          "tier": "T1",
+          "model": "gemma4-26b",
+          "key": "mac"
+        },
+        {
+          "device": "ws",
+          "tier": "T2",
+          "model": "gemma4-26b",
+          "key": "ws"
+        }
+      ],
+      "expect": {
+        "privacy": "public",
+        "chosen": "mac",
+        "queue_needs": null,
+        "floor": "T1",
+        "ceiling": "T3"
+      }
+    },
+    {
+      "name": "heavy \u2192 workstation",
+      "prompt": {
+        "repeat": "x ",
+        "times": 8000
+      },
+      "context_tokens": 0,
+      "nodes": [
+        {
+          "device": "phone",
+          "tier": "T0",
+          "model": "gemma4-e4b",
+          "local": true,
+          "key": "phone"
+        },
+        {
+          "device": "mac",
+          "tier": "T1",
+          "model": "gemma4-26b",
+          "key": "mac"
+        },
+        {
+          "device": "ws",
+          "tier": "T2",
+          "model": "gemma4-26b",
+          "key": "ws"
+        }
+      ],
+      "expect": {
+        "privacy": "public",
+        "chosen": "ws",
+        "queue_needs": null,
+        "floor": "T1",
+        "ceiling": "T3"
+      }
+    },
+    {
+      "name": "heavy, no workstation \u2192 laptop (the demo setup)",
+      "prompt": {
+        "repeat": "x ",
+        "times": 8000
+      },
+      "context_tokens": 0,
+      "nodes": [
+        {
+          "device": "phone",
+          "tier": "T0",
+          "model": "gemma4-e4b",
+          "local": true,
+          "key": "phone"
+        },
+        {
+          "device": "mac",
+          "tier": "T1",
+          "model": "gemma4-26b",
+          "key": "mac"
+        }
+      ],
+      "expect": {
+        "privacy": "public",
+        "chosen": "mac",
+        "queue_needs": null,
+        "floor": "T1",
+        "ceiling": "T3"
+      }
+    },
+    {
+      "name": "heavy, phone alone \u2192 queue",
+      "prompt": {
+        "repeat": "x ",
+        "times": 8000
+      },
+      "context_tokens": 0,
+      "nodes": [
+        {
+          "device": "phone",
+          "tier": "T0",
+          "model": "gemma4-e4b",
+          "local": true,
+          "key": "phone"
+        }
+      ],
+      "expect": {
+        "privacy": "public",
+        "chosen": null,
+        "queue_needs": "T1",
+        "floor": "T1",
+        "ceiling": "T3"
+      }
+    },
+    {
+      "name": "long, phone alone \u2192 queue",
+      "prompt": {
+        "repeat": "x ",
+        "times": 4000
+      },
+      "context_tokens": 0,
+      "nodes": [
+        {
+          "device": "phone",
+          "tier": "T0",
+          "model": "gemma4-e4b",
+          "local": true,
+          "key": "phone"
+        }
+      ],
+      "expect": {
+        "privacy": "public",
+        "chosen": null,
+        "queue_needs": "T1",
+        "floor": "T1",
+        "ceiling": "T3"
+      }
+    },
+    {
+      "name": "short question, phone alone \u2192 phone",
+      "prompt": "Remind me what Mia likes",
+      "context_tokens": 0,
+      "nodes": [
+        {
+          "device": "phone",
+          "tier": "T0",
+          "model": "gemma4-e4b",
+          "local": true,
+          "key": "phone"
+        }
+      ],
+      "expect": {
+        "privacy": "public",
+        "chosen": "phone",
+        "queue_needs": null,
+        "floor": "T0",
+        "ceiling": "T3"
+      }
+    },
+    {
+      "name": "short prompt with a long conversation \u2192 laptop",
+      "prompt": "and the break clause?",
+      "context_tokens": 2500,
+      "nodes": [
+        {
+          "device": "phone",
+          "tier": "T0",
+          "model": "gemma4-e4b",
+          "local": true,
+          "key": "phone"
+        },
+        {
+          "device": "mac",
+          "tier": "T1",
+          "model": "gemma4-26b",
+          "key": "mac"
+        }
+      ],
+      "expect": {
+        "privacy": "public",
+        "chosen": "mac",
+        "queue_needs": null,
+        "floor": "T1",
+        "ceiling": "T3"
+      }
+    }
+  ]
+}

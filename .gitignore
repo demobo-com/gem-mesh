@@ -1,0 +1,6 @@
+__pycache__/
+.DS_Store
+.run/
+.venv/
+*.pyc
+demo/files/.versions/

@@ -1,0 +1,18 @@
+# uv workspace root for the Gem Mesh. Non-Python folders (static, policy, clients/android, clients/ios) sit beside the members.
+[project]
+name = "gem-mesh-workspace"
+version = "0.0.0"
+requires-python = ">=3.12"
+dependencies = ["meshcore", "meshnode", "gem-mesh"]
+
+[tool.uv]
+# Prefer uv-managed CPython: the python.org framework build on this Mac has no TLS certificates.
+python-preference = "managed"
+
+[tool.uv.workspace]
+members = ["core", "servers/litert", "clients/cli", "eval"]
+
+[tool.uv.sources]
+meshcore = { workspace = true }
+meshnode = { workspace = true }
+gem-mesh = { workspace = true }

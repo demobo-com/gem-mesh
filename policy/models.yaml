@@ -1,0 +1,42 @@
+# Fleet model catalog: what each role downloads and serves by default.
+# Precedence at runtime: `meshnode --model` flag > ~/.gem-mesh/profile.yaml > this file.
+models:
+  gemma4-e2b:     { repo: litert-community/gemma-4-E2B-it-litert-lm,     file: gemma-4-E2B-it.litertlm,         bytes: 2588147712 }
+  gemma4-e4b:     { repo: litert-community/gemma-4-E4B-it-litert-lm,     file: gemma-4-E4B-it.litertlm,         bytes: 3659530240 }
+  gemma4-12b-gpu: { repo: litert-community/gemma-4-12B-it-litert-lm,     file: gemma-4-12B-it-gpu.litertlm,     bytes: 5986074624 }
+  gemma4-26b:     { repo: litert-community/gemma-4-26B-A4B-it-litert-lm, file: gemma-4-26B-A4B-it-gpu.litertlm, bytes: 15786524672 }
+  gemma4-31b:     { repo: litert-community/gemma-4-31B-it-litert-lm,     file: gemma-4-31B-it-gpu.litertlm,     bytes: 19217989632 }
+  embeddinggemma-2: { repo: litert-community/embeddinggemma-2-text-270m-litert-lm, file: embeddinggemma-2-text-270m.litertlm, bytes: 164626432 }
+roles:
+  # by_ram: the first row whose min_ram_gb fits this machine's memory wins (install.sh; override with --model or --size).
+  # vision: the small model the laptop chat loads to look at images (only E2B/E4B builds carry an image encoder).
+  mobile-mock:
+    tier: T0
+    model: gemma4-e4b
+    by_ram:
+      - { min_ram_gb: 16, model: gemma4-e4b, context: 8192 }
+      - { min_ram_gb: 0,  model: gemma4-e2b, context: 4096 }
+  macbook:
+    tier: T1
+    model: gemma4-26b
+    by_ram:
+      - { min_ram_gb: 32, model: gemma4-26b,     context: 32768, sessions: 2, vision: gemma4-e4b }   # M-series Pro/Max, 32 GB+
+      - { min_ram_gb: 24, model: gemma4-12b-gpu, context: 16384, sessions: 1, vision: gemma4-e4b }
+      - { min_ram_gb: 16, model: gemma4-e4b,     context: 8192,  sessions: 1, vision: gemma4-e4b }
+      - { min_ram_gb: 0,  model: gemma4-e2b,     context: 4096,  sessions: 1, vision: gemma4-e2b }   # 8 GB Macs
+  workstation:   # a node for others: M5 Ultra Mac Studio, Linux + NVIDIA, or any spare Mac. Sized by GPU memory:
+                 # NVIDIA, the largest single card (one node runs on one GPU); a Mac, about two thirds of its memory
+                 # (what macOS lets the GPU use)
+    tier: T2
+    model: gemma4-31b
+    by_ram:
+      - { min_ram_gb: 48, model: gemma4-31b,     context: 32768, sessions: 2 }   # M5 Ultra Mac Studio, RTX PRO 6000
+      - { min_ram_gb: 24, model: gemma4-31b,     context: 16384, sessions: 1 }   # RTX 5090 32 GB (20.7 GB with ring buffers), 36 GB+ Macs
+      - { min_ram_gb: 18, model: gemma4-26b,     context: 16384, sessions: 1 }   # 32 GB Macs
+      - { min_ram_gb: 10, model: gemma4-12b-gpu, context: 16384, sessions: 1 }   # 16-24 GB Macs, 12-16 GB cards
+      - { min_ram_gb: 0,  model: gemma4-e4b,     context: 8192,  sessions: 1 }
+  server:      { tier: T3, model: gemma4-31b }
+
+# Memory index embeddings (all roles that hold memory): EmbeddingGemma 2, 270M, text.
+# On the Pixel 11 use the Tensor G6 build (embeddinggemma-2-text-270m_Google_Tensor_G6.litertlm).
+embedding: embeddinggemma-2

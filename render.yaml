@@ -1,0 +1,16 @@
+# Render Blueprint: one static site (free tier) serving static/ only.
+# Deploys run only when something under static/ changes.
+services:
+  - type: web
+    name: gem-mesh
+    runtime: static
+    staticPublishPath: static
+    buildCommand: ""
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - static/**
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache

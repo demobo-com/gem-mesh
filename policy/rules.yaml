@@ -1,0 +1,26 @@
+# Deterministic privacy rules. Any hit makes the request sensitive; the classifier never overrides a hit.
+# Deployments add their own terms (client names, matter codes, family names) under `terms`.
+patterns:
+  - name: email
+    regex: '[\w.+-]+@[\w-]+\.[\w.-]+'
+  - name: api-key
+    # sk-ant-…, sk-proj-…, ghp_…, xoxb-…, hf_…, AWS AKIA…, Google AIza…, and password=… / api_key: … assignments
+    regex: '\b(?:sk|pk|rk|ghp|gho|ghs|ghu|github_pat|xox[baprs]|hf)[-_][A-Za-z0-9_-]{16,}|\bAKIA[0-9A-Z]{16}\b|\bAIza[0-9A-Za-z_-]{35}\b|\b(?:password|passwd|api[_-]?key|secret|token)\s*[:=]\s*\S{6,}'
+  - name: private-key
+    regex: '-----BEGIN [A-Z ]*PRIVATE KEY-----'
+  - name: private-path
+    regex: '(?:~|/Users|/home)/[^\s"'']+'
+  - name: phone
+    # +1 415 555 0134, (415) 555-0134, 415.555.0134, +44 20 7946 0958; not dates such as 2026-10-21
+    regex: '(?<![\w-])(?:\+\d{1,3}[\s.-]?)?(?:\(\d{2,4}\)|\d{2,4})[\s.-]\d{3,4}[\s.-]\d{3,4}(?![\w-])'
+  - name: case-number
+    regex: '\b(?:case|matter|file|docket)\s*(?:no\.?|#)?\s*\d{3,}\b'
+  # Pay figures only when pay words are near them (salary, bonus, offer; an hourly rate needs "paid", "wage" …): a bare amount such as a
+  # lease's annual rent or an invoice total is not a salary. Checked by eval/test_router.py.
+  - name: salary
+    regex: '(?:salar(?:y|ies)|base\s+pay|pay\s+(?:rise|raise|band|grade)|compensation|\bcomp\b|bonus(?:es)?|raises?|wages?|earns?|earning|merit\s+increase|offer(?:ed)?|take[- ]home|stipend|severance|equity\s+grant)[^.\n]{0,40}?(?:\$\s?\d{1,3}(?:,\d{3})+(?:\.\d+)?|\$\s?\d+(?:\.\d+)?\s?k\b|\b\d{2,3}\s?k\b)|(?:\$\s?\d{1,3}(?:,\d{3})+(?:\.\d+)?|\$\s?\d+(?:\.\d+)?\s?k\b|\b\d{2,3}\s?k\b)[^.\n]{0,25}?(?:salar(?:y|ies)|base\s+pay|pay\s+(?:rise|raise|band|grade)|compensation|\bcomp\b|bonus(?:es)?|raises?|wages?|earns?|earning|merit\s+increase|offer(?:ed)?|take[- ]home|stipend|severance|equity\s+grant)|(?:\bpaid\b|\bmakes\b|\bearns?\b|wages?|hourly\s+rate|rate\s+of\s+pay)[^.\n]{0,20}?\$\s?\d{1,3}(?:\.\d{2})?\s*(?:/\s*h(?:ou)?r\b|per\s+hour|an\s+hour)'
+terms:
+  - Acme
+  - Northwind
+  - Contoso
+  - Blue Harbor
