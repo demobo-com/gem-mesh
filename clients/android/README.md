@@ -114,6 +114,15 @@ It appears in the phone's tier strip, and long work goes there.
 No cable? Use wireless debugging: **Developer options → Wireless debugging**, then
 `adb pair <ip:port>` (with the pairing code the phone shows), `adb connect <ip:port>`, and `./gradlew installDebug`.
 
+### In the app
+
+- **Attach files**: the paperclip in the message box offers **Photos** (the photo picker) or **Files** (the file
+  browser; swipe back to leave it without picking); tap outside the menu to cancel. The files are copied into the
+  workspace and named in your message, so they go with it (photos keep their location until you remove it).
+- **Voice input**: tap the microphone, speak, tap stop. The phone's own model (E4B or E2B, with its audio part)
+  turns the recording into text in the message box for you to check before sending. Nothing is sent anywhere: the
+  audio is recorded at 16 kHz, transcribed on the phone and discarded. Android asks for microphone access once.
+
 ## For developers
 
 ### Tests and logs

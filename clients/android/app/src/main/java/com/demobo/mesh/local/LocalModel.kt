@@ -98,20 +98,26 @@ class LocalModel(private val context: Context, val spec: ModelSpec) {
     private fun open(backend: Backend, probe: Boolean): Engine {
         // Benchmark counters give each reply's exact prefill and decode token counts (TokenCount on the badge).
         ExperimentalFlags.enableBenchmark = true
-        // E2B and E4B carry an image encoder: open with vision for look_at_image, and without it if that fails.
-        for (withVision in listOf(true, false)) {
-            val e = Engine(EngineConfig(modelPath = file.path, backend = backend, visionBackend = if (withVision) backend else null,
-                maxNumTokens = window, maxNumImages = if (withVision) 4 else null, cacheDir = context.cacheDir.path))
+        // E2B and E4B carry an image encoder (look_at_image) and an audio encoder (voice input). Vision tries the main
+        // backend, then the CPU (the Pixel 11's GPU cannot host the image encoder); audio runs on the CPU. Each part is
+        // dropped only if it cannot be opened, so the chat still works with the text model alone.
+        val cpu = Backend.CPU()
+        val attempts: List<Pair<Backend?, Backend?>> = listOf(backend to cpu, cpu to cpu, null to cpu, null to null)
+        for ((visionBe, audioBe) in attempts) {
+            val e = Engine(EngineConfig(modelPath = file.path, backend = backend, visionBackend = visionBe, audioBackend = audioBe,
+                maxNumTokens = window, maxNumImages = if (visionBe != null) 4 else null, cacheDir = context.cacheDir.path))
             try {
                 e.initialize()
                 if (probe) e.createConversation(ConversationConfig(samplerConfig = GREEDY)).use { it.sendMessage("Hi") }
-                vision = withVision
+                vision = visionBe != null
+                audio = audioBe != null
+                Log.i(TAG, "engine on $backend: vision ${visionBe ?: "off"}, audio ${audioBe ?: "off"}")
                 return e
             } catch (t: Throwable) {
                 runCatching { e.close() }
-                // Without OpenCL the backend itself is missing; retrying it without vision only costs time.
-                if (!withVision || "OpenCL" in (t.message ?: "")) throw t
-                Log.w(TAG, "no vision on $backend: ${t.message}")
+                // Without OpenCL the backend itself is missing; retrying it with fewer parts only costs time.
+                if ((visionBe == null && audioBe == null) || "OpenCL" in (t.message ?: "")) throw t
+                Log.w(TAG, "engine without vision on $visionBe / audio on $audioBe: ${t.message?.lineSequence()?.firstOrNull()}")
             }
         }
         error("unreachable")
@@ -119,6 +125,20 @@ class LocalModel(private val context: Context, val spec: ModelSpec) {
 
     /** True when the engine was opened with its image encoder. */
     var vision: Boolean = false; private set
+
+    /** True when the engine was opened with its audio encoder (voice input). */
+    var audio: Boolean = false; private set
+
+    /** Speech to text on the phone: a 16 kHz mono WAV recording in, the words out. Audio never leaves the phone. */
+    suspend fun transcribe(wav: ByteArray): String = lock.withLock {
+        withContext(Dispatchers.IO) {
+            require(audio) { "$modelId was opened without its audio encoder" }
+            requireNotNull(engine) { "local model not loaded" }.createConversation(ConversationConfig(samplerConfig = GREEDY)).use { conv ->
+                conv.sendMessage(Contents.of(listOf(Content.AudioBytes(wav),
+                    Content.Text("Transcribe this recording exactly, in the language spoken. Reply with the words only, no notes.")))).text().trim()
+            }
+        }
+    }
 
     /**
      * One image or up to four, labelled by file name so they can be compared, in a throwaway conversation

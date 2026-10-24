@@ -12,6 +12,8 @@
     <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
     <!-- Only for scanning the pairing QR code. -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Voice input: recorded and transcribed on the phone by its own model; audio never leaves the phone. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <!-- Nodes are plain HTTP on the LAN; a release build should limit cleartext to local addresses. -->

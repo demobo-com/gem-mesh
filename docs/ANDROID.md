@@ -114,7 +114,11 @@ pin an exact version, do not use `latest.release`). Sample app: Google AI Edge G
 - `engine.createConversation(ConversationConfig(systemInstruction, tools, automaticToolCalling = false))`.
   **Keep automatic tool calling off**: the app runs each tool itself, because file and photo actions need the
   user's approval first. Return results with `Message.tool(...)`.
-- Images: `Contents.of(Content.ImageFile(path), Content.Text("..."))`. Only the E2B/E4B builds carry an image
+- Images: `Contents.of(Content.ImageFile(path), Content.Text("..."))`.
+- Audio (voice input): open the engine with `audioBackend = Backend.CPU()` and send
+  `Contents.of(Content.AudioBytes(wav16kMono), Content.Text("Transcribe this recording exactly…"))`. E4B transcribed a
+  spoken sentence word for word in about a second on a Mac. On the Pixel 11 the image encoder may refuse the GPU; the
+  app then tries it on the CPU (`LocalModel.open`). Only the E2B/E4B builds carry an image
   encoder (the 12B and 26B do not). Up to four images in one message works on the Mac.
 - Thinking: `ThinkingConfig(enableThinking, thinkingTokenBudget)`; leave it off on the phone.
 - Model: `gemma-4-E4B-it.litertlm` from `litert-community/gemma-4-E4B-it-litert-lm` (3.7 GB; E2B 2.6 GB if

@@ -183,6 +183,7 @@ data class UiState(
     val memoryNote: String = "",
     /** Text shared into the app from another app, put in the composer once. */
     val draft: String? = null,
+    val transcribing: Boolean = false,
     /** A file or photo change shown for approval. */
     val change: PendingChange? = null,
     /** Files in the workspace folder. */
@@ -485,19 +486,52 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Files picked from the phone (photos from the gallery, documents) are copied into the workspace. */
-    fun importFiles(uris: List<android.net.Uri>) = viewModelScope.launch(Dispatchers.IO) {
+    fun importFiles(uris: List<android.net.Uri>) = viewModelScope.launch(Dispatchers.IO) { copyIn(uris); refreshWorkspace() }
+
+    /**
+     * The composer's paperclip: copy the picked files into the workspace and name them in the message being written,
+     * so they go with it (files named in a message are attached, as in the Mac chat).
+     */
+    fun attachFiles(uris: List<android.net.Uri>, typed: String) = viewModelScope.launch(Dispatchers.IO) {
+        val names = copyIn(uris)
+        refreshWorkspace()
+        if (names.isNotEmpty()) _state.update { it.copy(draft = (typed.trimEnd() + " " + names.joinToString(" ")).trim() + " ") }
+    }
+
+    /** The composer's microphone: speech to text on the phone's own model; the words land in the message box to review. */
+    fun transcribe(wav: ByteArray, typed: String) = viewModelScope.launch {
+        if (wav.size < 16000) return@launch                                   // under half a second: nothing said
+        _state.update { it.copy(transcribing = true) }
+        val words = runCatching { local.transcribe(wav) }
+        _state.update { it.copy(transcribing = false) }
+        words.onSuccess { w -> if (w.isNotBlank()) _state.update { it.copy(draft = (typed.trimEnd() + " " + w).trim()) } }
+            .onFailure { e ->
+                Log.w(TAG, "transcribe", e)
+                android.widget.Toast.makeText(getApplication(), "Voice input needs the phone's model with its audio part (E4B or E2B); " +
+                    "it is not ready. ${e.message ?: ""}".trim(), android.widget.Toast.LENGTH_LONG).show()
+            }
+    }
+
+    private fun copyIn(uris: List<android.net.Uri>): List<String> {
         val cr = getApplication<Application>().contentResolver
-        for (u in uris) {
-            // Ask for the original bytes, so a photo keeps its EXIF location for the app to show and remove.
-            val src = runCatching { android.provider.MediaStore.setRequireOriginal(u) }.getOrDefault(u)
-            val name = cr.query(u, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+        val names = mutableListOf<String>()
+        val stamp = java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(java.util.Date())
+        for ((i, u) in uris.withIndex()) {
+            // The photo picker hides real names ("25.jpg") and refuses requireOriginal; name its photos by time instead.
+            val picker = u.authority == "media" && u.pathSegments.firstOrNull() == "picker"
+            // Elsewhere ask for the original bytes, so a photo keeps its EXIF location for the app to show and remove.
+            val src = if (picker) u else runCatching { android.provider.MediaStore.setRequireOriginal(u) }.getOrDefault(u)
+            val shown = cr.query(u, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
                 if (c.moveToFirst()) c.getString(0) else null
-            } ?: "file-${System.currentTimeMillis()}"
+            }
+            val name = if (picker) "photo-$stamp${if (uris.size > 1) "-${i + 1}" else ""}.${shown?.substringAfterLast('.', "jpg") ?: "jpg"}"
+                else shown ?: "file-${System.currentTimeMillis()}"
             val safe = name.replace(Regex("[^A-Za-z0-9._-]"), "-").trimStart('.', '-').ifEmpty { "file" }
             runCatching { cr.openInputStream(src) }.getOrNull()?.use { inp -> java.io.File(workspace.dir, safe).outputStream().use { inp.copyTo(it) } }
                 ?: cr.openInputStream(u)?.use { inp -> java.io.File(workspace.dir, safe).outputStream().use { inp.copyTo(it) } }
+            if (java.io.File(workspace.dir, safe).exists()) names += safe
         }
-        refreshWorkspace()
+        return names
     }
 
     /** Embeds new memory events in the background (EmbeddingGemma, when it is on the phone). */
@@ -752,6 +786,12 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         )
         fun step(line: String) { steps += line; onStep(line) }
         fun active() = _state.update { it.copy(activeNode = if (c.local) it.device else c.device) }
+        // Only a node the router could have chosen: inside this conversation's window, with room for `need` tokens.
+        fun bigger(need: Int): Candidate? {
+            val lo = policy.rank(p.decision.floor); val hi = policy.rank(p.decision.ceiling)
+            return candidates().filter { !it.local && policy.rank(it.tier) in lo..hi && (it.maxNumTokens ?: Int.MAX_VALUE) >= need }
+                .minWithOrNull(compareBy<Candidate>({ policy.rank(it.tier) }, { it.load }))
+        }
         onProvenance(prov())
         onPhase(if (c.local) "Answering on this phone…" else "Sending to ${c.device}…")
         active()
@@ -797,11 +837,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 if (calls.isEmpty()) break
                 val wantsWeb = calls.any { it.name == "web_search" || it.name == "fetch" }
                 if (wantsWeb && c.local) {
-                    // Only a node the router could have chosen: inside this conversation's window, with room for it.
-                    val lo = policy.rank(p.decision.floor); val hi = policy.rank(p.decision.ceiling)
-                    val need = msgs.sumOf { it.optString("content").length / 4 }
-                    val bigger = candidates().filter { !it.local && policy.rank(it.tier) in lo..hi && (it.maxNumTokens ?: Int.MAX_VALUE) >= need }
-                        .minWithOrNull(compareBy<Candidate>({ policy.rank(it.tier) }, { it.load }))
+                    val bigger = bigger(msgs.sumOf { it.optString("content").length / 4 })
                     if (bigger != null) {
                         // The phone triages; a laptop or workstation reads the web. Restart the question there.
                         c = bigger; device = c.device; active()
@@ -820,6 +856,15 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                     step(stepLine(call.name, args, result))
                     if (call.name in Actions.NAMES && result.startsWith("Done")) files += producedFiles(call.name, args)
                     convo += JSONObject().put("role", "tool").put("tool_call_id", call.id).put("name", call.name).put("content", result)
+                }
+                val read = convo.sumOf { it.optString("content").length / 4 }
+                if (c.local && read > policy.longPromptTokens) {
+                    // A tool brought in more than the phone should read (a whole lease): the next node up answers, with what was read.
+                    bigger(read)?.let {
+                        c = it; device = c.device; active()
+                        step("route  %,d tokens read, handed up the mesh → ${c.device} / ${c.model}".format(read))
+                        onPhase("Sending to ${c.device}…")
+                    }
                 }
                 onProvenance(prov())
             }

@@ -33,6 +33,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Stop
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import com.demobo.mesh.local.VoiceRecorder
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Info
@@ -58,6 +67,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -68,6 +78,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -546,6 +557,26 @@ private fun Composer(state: UiState, vm: ChatViewModel) {
     var input by rememberSaveable { mutableStateOf("") }
     LaunchedEffect(state.draft) { state.draft?.let { input = it; vm.draftTaken() } }
     val canSend = input.isNotBlank() && !state.busy
+    val context = LocalContext.current
+    val recorder = remember { VoiceRecorder() }
+    var recording by remember { mutableStateOf(false) }
+    val pickFiles = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        if (uris.isNotEmpty()) vm.attachFiles(uris, input)
+    }
+    // Photos go through the system photo picker, which has its own close button; Files opens the document browser.
+    val pickPhotos = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(10)) { uris ->
+        if (uris.isNotEmpty()) vm.attachFiles(uris, input)
+    }
+    var attachMenu by remember { mutableStateOf(false) }
+    fun startRecording() { recording = recorder.start() }
+    val askMic = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> if (granted) startRecording() }
+    fun toggleMic() {
+        if (recording) { recording = false; vm.transcribe(recorder.stop(), input); return }
+        val ok = androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (ok) startRecording() else askMic.launch(android.Manifest.permission.RECORD_AUDIO)
+    }
+    DisposableEffect(Unit) { onDispose { if (recorder.recording) recorder.stop() } }
     Surface(
         modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 10.dp),
         shape = MaterialTheme.shapes.extraLarge,
@@ -569,6 +600,34 @@ private fun Composer(state: UiState, vm: ChatViewModel) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 8.dp)) {
                 RouteSelector(state, vm)
                 Spacer(Modifier.weight(1f))
+                Box {
+                    IconButton(onClick = { attachMenu = true }, enabled = !recording, modifier = Modifier.testTag("attach")) {
+                        Icon(Icons.Filled.AttachFile, contentDescription = "Attach files")
+                    }
+                    DropdownMenu(expanded = attachMenu, onDismissRequest = { attachMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Photos") },
+                            leadingIcon = { Icon(Icons.Filled.Image, contentDescription = null) },
+                            onClick = {
+                                attachMenu = false
+                                pickPhotos.launch(androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            },
+                            modifier = Modifier.testTag("attach-photos"),
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Files") },
+                            leadingIcon = { Icon(Icons.Filled.Description, contentDescription = null) },
+                            onClick = { attachMenu = false; pickFiles.launch(arrayOf("*/*")) },
+                            modifier = Modifier.testTag("attach-files"),
+                        )
+                    }
+                }
+                IconButton(onClick = ::toggleMic, enabled = !state.transcribing, modifier = Modifier.testTag("mic")) {
+                    if (state.transcribing) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                    else Icon(if (recording) Icons.Filled.Stop else Icons.Filled.Mic,
+                        contentDescription = if (recording) "Stop and transcribe" else "Voice input",
+                        tint = if (recording) MaterialTheme.colorScheme.error else LocalContentColor.current)
+                }
                 if (state.busy) {
                     CircularProgressIndicator(Modifier.size(20.dp).padding(end = 4.dp), strokeWidth = 2.dp)
                     Spacer(Modifier.width(10.dp))
