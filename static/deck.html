@@ -142,8 +142,14 @@ code { font-family: var(--mono); font-size: .9em; color: var(--mesh); }
 .shot img { display: block; width: 100%; max-height: 54vh; object-fit: cover; object-position: top; aspect-ratio: 1080 / 2410; border-radius: 1.6vmin; border: .4vmin solid #222c40; background: #000; }
 .shot figcaption { font-size: clamp(.68rem, 1.55vmin, 1rem); line-height: 1.3; color: var(--muted); }
 .shot figcaption b { display: block; color: var(--fg); font-family: var(--display); font-weight: 600; font-size: 1.12em; margin-bottom: .2vmin; }
+.shots.four { grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 100vh; }
 .shot .tag { display: inline-block; font-family: var(--mono); font-size: .82em; border-radius: 999px; padding: 0 .7em; margin-bottom: .5vmin; border: 1px solid; }
 .tag.p { color: var(--phone); border-color: var(--phone-deep); } .tag.m { color: var(--mesh); border-color: #2c4f8a; } .tag.w { color: #a9c1ff; border-color: #3456a8; }
+.tag.c { color: var(--cloud); border-color: #7a5a1f; }
+/* 6 · observability: four control-plane screens, then the laptop's terminal as wide as they are tall */
+.obs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 4.3fr); gap: 1.6vmin; align-items: start; }
+.obs .cli img { aspect-ratio: 1844 / 962; object-fit: contain; object-position: left top; border-radius: 1.2vmin; }
+.shot figcaption code { font-family: var(--mono); font-size: .92em; color: var(--fg); }
 .lightbox { position: fixed; inset: 0; z-index: 10; background: rgba(4, 7, 13, .92); display: none; place-items: center; cursor: zoom-out; padding: 3vmin; }
 .lightbox.on { display: grid; }
 .lightbox img { max-height: 94vh; max-width: 94vw; border-radius: 2vmin; border: .5vmin solid #222c40; }
@@ -189,7 +195,8 @@ code { font-family: var(--mono); font-size: .9em; color: var(--mesh); }
   .techs, .uses, .steps, .steps.three { grid-template-columns: 1fr 1fr; }
   .vid-grid { grid-template-columns: 1fr; } .flow { flex-wrap: wrap; gap: 1vmin; } .flow i { display: none; }
   .tiers5 { grid-template-columns: 1fr; } .tier { min-height: 0 !important; }
-  .shots { grid-template-columns: repeat(3, 1fr); }
+  .shots, .shots.four, .obs { grid-template-columns: repeat(2, 1fr); max-width: none; }
+  .obs .cli { grid-column: 1 / -1; }
 }
 </style>
 </head>
@@ -335,7 +342,7 @@ code { font-family: var(--mono); font-size: .9em; color: var(--mesh); }
 <section class="slide" data-title="Screenshots">
   <div class="eyebrow">On the Pixel 11 Pro · click any screen to enlarge</div>
   <h2>Every answer says which device, which model</h2>
-  <div class="shots">
+  <div class="shots four">
     <figure class="shot"><button type="button" data-full="img/screens/startup-1-key-numbers.png"><img src="img/screens/startup-1-key-numbers.png" alt="Key numbers answered on the phone by E4B: cash, burn, runway, ARR. Badge: phone, E4B, nothing left the phone. Route log: rule hit Northwind, sensitive, pixel-11-pro gemma4-e4b."></button>
       <figcaption><span class="tag p">T0 · E4B</span><b>Private notes, on the phone</b>A rule hit marks it sensitive; the phone answers itself.</figcaption></figure>
     <figure class="shot"><button type="button" data-full="img/screens/startup-2-red-board-1.png"><img src="img/screens/startup-2-red-board-1.png" alt="A photo taken with the camera button and the question; the phone looks at the image on device, then compares it with the negotiation notes."></button>
@@ -344,16 +351,28 @@ code { font-family: var(--mono); font-size: .9em; color: var(--mesh); }
       <figcaption><span class="tag m">T1 · 26B</span><b>Two limits broken</b>The laptop checks the board against her secret walk-away.</figcaption></figure>
     <figure class="shot"><button type="button" data-full="img/screens/startup-3-acquisition-4.png"><img src="img/screens/startup-3-acquisition-4.png" alt="Comparison of how $200M splits under the term sheet and the whiteboard offer, verdict stick to the term sheet. Badge: tzhang-mac, gemma4-26b thinking, 0 bytes left the mesh."></button>
       <figcaption><span class="tag w">T2 · 26B thinking</span><b>"Stick to the term sheet"</b>The deal math, with 0 bytes left the mesh.</figcaption></figure>
-    <figure class="shot"><button type="button" data-full="img/screens/mesh-away-shown.png"><img src="img/screens/mesh-away-shown.png" alt="Mesh dashboard: about 70.7k tokens processed in 24 hours, 0 B left the mesh, a map of the phone and two Macs, and T4 Gemini with zero asks."></button>
-      <figcaption><span class="tag m">Mesh map</span><b>70.7k tokens, 0 B out</b>The phone and both Macs; the cloud tier never asked.</figcaption></figure>
-    <figure class="shot"><button type="button" data-full="img/screens/mesh-tokens-by-tier.png"><img src="img/screens/mesh-tokens-by-tier.png" alt="Tokens by tier: T0 phone 18.9k, T1 36.0k, T2 15.8k, T4 Gemini 0, with private turn counts and cache reuse."></button>
-      <figcaption><span class="tag w">By tier</span><b>Work lands where it fits</b>Phone 18.9k · laptop 36.0k · workstation 15.8k · cloud 0.</figcaption></figure>
-    <figure class="shot"><button type="button" data-full="img/screens/mesh-sessions-by-device.png"><img src="img/screens/mesh-sessions-by-device.png" alt="Sessions by device: a timeline of where each session started (this phone, jeff-mbp, wens-MacBook-Pro-2) and a list of sessions such as key numbers and Northwind valuation, each private, with the tiers that answered: T0, T1, T2."></button>
-      <figcaption><span class="tag m">Sessions</span><b>Every session, every tier</b>Where it started, which tiers answered, all private.</figcaption></figure>
   </div>
 </section>
 
-<!-- 6 · more use cases -->
+<!-- 6 · observability -->
+<section class="slide" data-title="Observability">
+  <div class="eyebrow">The control plane on the Pixel · gem-mesh on the MacBook · click any screen to enlarge</div>
+  <h2>See where every token went, on the phone or from the laptop</h2>
+  <div class="obs">
+    <figure class="shot"><button type="button" data-full="img/screens/obs-conversations.png"><img src="img/screens/obs-conversations.png" alt="Conversations drawer: every conversation kept on this phone and synced with the Mac on the same network, including one started on wens-MacBook-Pro-2; swipe left to forget."></button>
+      <figcaption><span class="tag p">Memory</span><b>Kept on the phone</b>Every conversation, synced to the Mac; swipe to forget.</figcaption></figure>
+    <figure class="shot"><button type="button" data-full="img/screens/obs-mesh.png"><img src="img/screens/obs-mesh.png" alt="Mesh dashboard: about 70.7k tokens processed in 24 hours, 0 B left the mesh, a map of the phone, jeff-mbp, wens-MacBook-Pro-2 and tzhang-mac, and T4 Gemini with zero asks."></button>
+      <figcaption><span class="tag m">Mesh map</span><b>70.7k tokens, 0 B out</b>Every device on one map; the cloud tier never asked.</figcaption></figure>
+    <figure class="shot"><button type="button" data-full="img/screens/mesh-sessions-by-device.png"><img src="img/screens/mesh-sessions-by-device.png" alt="Sessions by device: where each session started, a cell per turn colored by the tier that answered, and a list of sessions with tokens, turns, private, and the tiers used."></button>
+      <figcaption><span class="tag m">Sessions</span><b>Who asked, who answered</b>Each turn, colored by the tier that took it.</figcaption></figure>
+    <figure class="shot"><button type="button" data-full="img/screens/obs-tokens.png"><img src="img/screens/obs-tokens.png" alt="Tokens by tier: T0 phone 18.9k, T1 36.0k, T2 15.8k, T4 Gemini 0, with turns, private turns, average time and cache reuse, and which device asked for them."></button>
+      <figcaption><span class="tag w">By tier</span><b>Work lands where it fits</b>Phone 18.9k · laptop 36.0k · workstation 15.8k · cloud 0.</figcaption></figure>
+    <figure class="shot cli"><button type="button" data-full="img/screens/cli-phone.png"><img src="img/screens/cli-phone.png" alt="The gem-mesh command line on the MacBook: a greeting routed to the Mac's gemma4-e4b with 0 bytes left the mesh, /memory and /sync mirroring the phone's memory, and /phone sending an email task, flagged as sensitive for the address, waiting for a yes before it goes to AGI's phone agent."></button>
+      <figcaption><span class="tag c">CLI · /phone</span><b>The same mesh from the laptop</b>Same route and badge, the phone's memory via <code>/sync</code>, and <code>/phone</code> hands a task to AGI's phone agent after a yes.</figcaption></figure>
+  </div>
+</section>
+
+<!-- 7 · more use cases -->
 <section class="slide" data-title="What else">
   <div class="eyebrow">Beyond the founder · tiered intelligence on devices you own</div>
   <h2>Anywhere data is private and the network can't be trusted</h2>
@@ -374,7 +393,7 @@ code { font-family: var(--mono); font-size: .9em; color: var(--mesh); }
   <p class="muted small">Every app gets the same mesh: routing across devices, the privacy check, memory, a queue for when a tier is away, and tools that ask first. An app adds its own rule file, persona and screens. Already in the repo: <code>gem-mesh code</code> answers a coding agent's model calls from your own mesh.</p>
 </section>
 
-<!-- 7 · try it -->
+<!-- 8 · try it -->
 <section class="slide" data-title="Try it">
   <div class="eyebrow">Open source · Apache 2.0 · try it today</div>
   <h2>Clone it, install it, talk to it</h2>
