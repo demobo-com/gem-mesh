@@ -6,6 +6,10 @@ and, optionally, bigger machines. Gem Mesh makes them act as one system, running
 your own device checks it for private content and hands it to the smallest device that can do the job. Nothing goes
 to a cloud model unless the conversation is public and you approve the exact text.
 
+[![Gem Mesh demo: a Pixel and two MacBooks on the same Wi-Fi working as one mesh](docs/media/gem-mesh-demo.jpg)](https://drive.google.com/file/d/1rLPmxmMTJNA0SyHUsPB0ZamIiasQ3ySs/view?usp=sharing)
+
+*Demo (67 s): a Pixel and two MacBooks on the same Wi-Fi, working as one mesh. Click to play (Google Drive).*
+
 You build the app; the mesh gives it routing, the privacy check, memory, a queue and tools with approval. The repo
 ships a reference chat for the Mac and an Android app that exercise all of it. Two example apps show the range: a
 **client-safe work assistant** (lease and invoice in, a stamped memo PDF out, nothing leaving the firm) and a
