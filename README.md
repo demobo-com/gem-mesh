@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="static/img/logo/gem-mesh-mark-white.svg">
+    <img src="static/img/logo/gem-mesh-mark.svg" width="120" alt="Gem Mesh logo: a star at the centre of eight linked nodes">
+  </picture>
+</p>
+
 # Gem Mesh
 
 **Open infrastructure for private AI apps on your own devices.** Every gem is a tier node: your phone, your Mac
