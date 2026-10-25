@@ -135,7 +135,7 @@ code { font-family: var(--mono); font-size: .9em; color: var(--mesh); }
 .player.playing .play { display: none; }
 .player.paused .play { display: grid; }
 /* 5 · screenshots */
-.shots { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1.6vmin; align-items: start; }
+.shots { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1.6vmin; align-items: start; }
 .shot { margin: 0; display: flex; flex-direction: column; gap: 1vmin; min-width: 0; }
 .shot button { padding: 0; border: 0; background: none; cursor: zoom-in; border-radius: 1.6vmin; display: block; }
 .shot button:focus-visible { outline: 2px solid var(--mesh); outline-offset: 3px; }
@@ -235,7 +235,7 @@ code { font-family: var(--mono); font-size: .9em; color: var(--mesh); }
     <div class="tech g1"><div class="u">Google DeepMind</div><h3>Gemma 4 on every tier</h3><ul><li>E4B on the phone: it hears and sees</li><li>12B and 26B MoE on laptops; 26B thinking and 31B on workstations</li><li>EmbeddingGemma 2 (270M) indexes your memory</li></ul></div>
     <div class="tech g2"><div class="u">Google AI Edge</div><h3>LiteRT-LM, one engine</h3><ul><li>Android SDK on the phone, Python engine on Macs and Linux</li><li>GPU on the Pixel and on Apple silicon</li><li><code>.litertlm</code> builds from litert-community; session KV reuse, tools, vision, audio</li></ul></div>
     <div class="tech g4"><div class="u">Google Pixel</div><h3>Pixel 11 Pro is T0</h3><ul><li>Gemma 4 E4B on its GPU</li><li>Holds your memory and runs the privacy check</li><li>Answers alone in Airplane Mode</li></ul></div>
-    <div class="tech g6"><div class="u">AGI, Inc.</div><h3>Mobile-use MCP</h3><ul><li>Lets the assistant act inside apps on the phone</li><li>Plugs in as MCP tools the mesh can call</li><li>Each action asks first, like every tool in the mesh</li></ul></div>
+    <div class="tech g6"><div class="u">AGI, Inc.</div><h3>Mobile-use MCP</h3><ul><li>"Use the phone" hands a task to AGI's MCP phone agent, which taps and types in apps</li><li>Never chosen by the router: you see the exact task, and Keep local is the default</li><li>Private tasks are flagged; a live card shows each step, with Stop</li></ul></div>
   </div>
   <p class="also"><b>Open-source glue:</b> zeroconf mDNS · FastAPI nodes with an OpenAI-compatible API · a per-mesh certificate authority for HTTPS pairing · Pillow, pypdf, fpdf2 for photo and PDF actions · SwiftUI iPhone app on the same engine.</p>
 </section>
@@ -348,6 +348,8 @@ code { font-family: var(--mono); font-size: .9em; color: var(--mesh); }
       <figcaption><span class="tag m">Mesh map</span><b>70.7k tokens, 0 B out</b>The phone and both Macs; the cloud tier never asked.</figcaption></figure>
     <figure class="shot"><button type="button" data-full="img/screens/mesh-tokens-by-tier.png"><img src="img/screens/mesh-tokens-by-tier.png" alt="Tokens by tier: T0 phone 18.9k, T1 36.0k, T2 15.8k, T4 Gemini 0, with private turn counts and cache reuse."></button>
       <figcaption><span class="tag w">By tier</span><b>Work lands where it fits</b>Phone 18.9k · laptop 36.0k · workstation 15.8k · cloud 0.</figcaption></figure>
+    <figure class="shot"><button type="button" data-full="img/screens/mesh-sessions-by-device.png"><img src="img/screens/mesh-sessions-by-device.png" alt="Sessions by device: a timeline of where each session started (this phone, jeff-mbp, wens-MacBook-Pro-2) and a list of sessions such as key numbers and Northwind valuation, each private, with the tiers that answered: T0, T1, T2."></button>
+      <figcaption><span class="tag m">Sessions</span><b>Every session, every tier</b>Where it started, which tiers answered, all private.</figcaption></figure>
   </div>
 </section>
 
