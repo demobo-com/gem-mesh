@@ -129,7 +129,9 @@ Full guide, with checks and fixes: [clients/ios/README.md](clients/ios/README.md
 
 | Command | What it does |
 |---|---|
-| `gem-mesh` | the chat |
+| `gem-mesh` | the chat; `/help` inside it lists the rest |
+| `/frontier <question>` (in the chat) | ask Gemini, for a public conversation, after you approve the exact text (`GEMINI_API_KEY`) |
+| `/phone <task>` (in the chat) | AGI's phone agent does it on your phone, tapping and typing in apps; you see the exact task (flagged if private) and approve it, and every step's screenshot goes to AGI (`AGI_API_KEY`) |
 | `gem-mesh ask "..."` · `gem-mesh route "..."` | one answer · where a question would go, without running it |
 | `gem-mesh nodes` | the devices in your mesh right now |
 | `gem-mesh pair` | connect a phone: address, checks, pairing QR code · `--secure` makes the mesh private, `--open` undoes it |
