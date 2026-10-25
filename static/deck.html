@@ -3,22 +3,25 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Deck · Gem Mesh</title>
+<title>Gem Mesh · Google Gemma Hardware Hackathon</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: one 16:9 stage per slide, dark projection theme by choice, type scales with the viewport. */
+/* Layout: one 16:9 stage per slide, dark projection theme, type scales with the viewport.
+   Tier colours match the Android app: teal = phone, blue = mesh, amber = cloud. */
 :root {
-  --bg: #0c1220;
-  --bg2: #121b2e;
-  --panel: #18233a;
+  --bg: #0a0f1a;
+  --bg2: #101828;
+  --panel: #151f33;
   --fg: #eef2f8;
   --muted: #9aa8bf;
-  --line: #2a3752;
-  --accent: #6f9bff;
-  --accent-deep: #2f5fd6;
-  --outside: #f2a65a;
-  --t0: #2a3d66; --t1: #30509a; --t2: #3a6bd0; --t3: #5f8cf0;
+  --line: #27344d;
+  --phone: #2dd4bf;
+  --phone-deep: #0f5f57;
+  --mesh: #6f9bff;
+  --mesh-deep: #2f5fd6;
+  --ws: #3b6fe0;
+  --cloud: #f5b84a;
   --display: "IBM Plex Sans Condensed", "Helvetica Neue", Arial, sans-serif;
   --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
@@ -30,171 +33,163 @@ body { background: var(--bg); color: var(--fg); font-family: var(--body); overfl
 .deck { position: fixed; inset: 0; }
 .slide {
   position: absolute; inset: 0; display: none;
-  padding-block: calc(5vmin + env(safe-area-inset-top, 0px)) calc(7vmin + env(safe-area-inset-bottom, 0px));
+  padding-block: calc(4.5vmin + env(safe-area-inset-top, 0px)) calc(7vmin + env(safe-area-inset-bottom, 0px));
   padding-left: max(6vmin, env(safe-area-inset-left, 0px));
   padding-right: max(6vmin, env(safe-area-inset-right, 0px));
-  background: var(--bg);
+  background: radial-gradient(120vmin 80vmin at 85% 0%, rgba(47, 95, 214, .14), transparent 60%), var(--bg);
 }
-.slide.active { display: flex; flex-direction: column; justify-content: center; gap: 2.5vmin; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; gap: 2.2vmin; }
 @media (prefers-reduced-motion: no-preference) {
   .slide.active { animation: in .35s ease-out; }
   @keyframes in { from { opacity: 0; transform: translateY(1vmin); } to { opacity: 1; transform: none; } }
 }
-.eyebrow { font-family: var(--mono); font-size: clamp(11px, 1.6vmin, 16px); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
-h1 { font-family: var(--display); font-weight: 700; font-size: clamp(2.2rem, 9vmin, 7rem); line-height: .98; margin: 0; letter-spacing: -.015em; text-wrap: balance; }
-h2 { font-family: var(--display); font-weight: 600; font-size: clamp(1.6rem, 5.6vmin, 4rem); line-height: 1.05; margin: 0; letter-spacing: -.01em; text-wrap: balance; max-width: 28ch; }
-p, li { font-size: clamp(1rem, 2.6vmin, 1.7rem); line-height: 1.4; margin: 0; }
-.big { font-size: clamp(1.2rem, 3.4vmin, 2.3rem); max-width: 34ch; }
+.eyebrow { font-family: var(--mono); font-size: clamp(11px, 1.6vmin, 16px); letter-spacing: .12em; text-transform: uppercase; color: var(--mesh); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(2.6rem, 12vmin, 9rem); line-height: .95; margin: 0; letter-spacing: -.02em; }
+h2 { font-family: var(--display); font-weight: 600; font-size: clamp(1.5rem, 5.2vmin, 3.8rem); line-height: 1.05; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+h3 { font-family: var(--display); font-weight: 600; margin: 0; }
+p, li { font-size: clamp(.95rem, 2.4vmin, 1.6rem); line-height: 1.4; margin: 0; }
 .muted { color: var(--muted); }
-.mono { font-family: var(--mono); }
-.row { display: flex; gap: 3vmin; flex-wrap: wrap; align-items: stretch; }
-.row > * { flex: 1 1 28ch; min-width: 0; }
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: 1vmin; padding: 2.4vmin 2.8vmin; display: flex; flex-direction: column; gap: 1vmin; }
-.card h3 { font-family: var(--display); font-weight: 600; font-size: clamp(1.1rem, 3.2vmin, 2.1rem); margin: 0; }
-.card .k { font-family: var(--mono); font-size: clamp(.7rem, 1.5vmin, 1rem); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-.card.bad { border-color: #5a3340; } .card.bad h3 { color: #ff9ca8; }
-.card.good { border-color: #2c4f8a; }
-.stat { font-family: var(--display); font-weight: 700; font-size: clamp(2.4rem, 9vmin, 6.5rem); line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
-.stat small { font-family: var(--mono); font-weight: 400; font-size: clamp(.8rem, 2vmin, 1.2rem); color: var(--muted); letter-spacing: 0; margin-left: .3em; }
-.tiers { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.5vmin; align-items: end; }
-.tier { border-radius: .8vmin; padding: 2vmin; display: flex; flex-direction: column; gap: .6vmin; color: #fff; min-width: 0; }
-.tier .t { font-family: var(--mono); font-size: clamp(.7rem, 1.6vmin, 1rem); letter-spacing: .1em; opacity: .85; }
-.tier .d { font-family: var(--display); font-weight: 600; font-size: clamp(.95rem, 2.6vmin, 1.7rem); line-height: 1.1; }
-.tier .p { font-weight: 600; font-size: clamp(.75rem, 1.85vmin, 1.15rem); line-height: 1.25; }
-.tier .sp { font-family: var(--mono); font-size: clamp(.62rem, 1.45vmin, .9rem); opacity: .9; letter-spacing: .02em; }
-.tier .m { font-size: clamp(.75rem, 1.9vmin, 1.2rem); opacity: .9; }
-.tier.t0 { background: var(--t0); min-height: 22vmin; } .tier.t1 { background: var(--t1); min-height: 28vmin; }
-.tier.t2 { background: var(--t2); min-height: 34vmin; } .tier.t3 { background: var(--t3); min-height: 40vmin; border: 1px dashed rgba(255,255,255,.5); }
-.tier.t4 { background: transparent; border: 1.5px dashed var(--outside); color: var(--outside); min-height: 46vmin; }
-.tier.t3 .m::after, .tier.t4 .m::after { content: ""; }
-.out { color: var(--outside); }
-.two { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5vmin; }
-.two ul.ex { list-style: none; padding: 0; margin: .6vmin 0 0; display: flex; flex-direction: column; gap: 1.3vmin; }
-.two ul.ex li { border-top: 1px solid var(--line); padding-top: 1.1vmin; font-size: clamp(.85rem, 2vmin, 1.2rem); }
-.two ul.ex q { display: block; color: var(--fg); }
-.two ul.ex span { display: block; color: var(--muted); font-size: .9em; margin-top: .3vmin; }
-@media (max-width: 720px) { .two { grid-template-columns: 1fr; } }
-.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(22ch, 1fr)); gap: 2.5vmin; }
-.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5vmin; }
-.step { background: var(--panel); border: 1px solid var(--line); border-radius: .8vmin; padding: 2vmin; min-width: 0; }
-.step .n { font-family: var(--mono); color: var(--accent); font-size: clamp(.7rem, 1.6vmin, 1rem); letter-spacing: .1em; }
-.step h3 { font-family: var(--display); font-size: clamp(1rem, 2.8vmin, 1.8rem); margin: .4vmin 0 .8vmin; font-weight: 600; }
-.step p { font-size: clamp(.85rem, 2vmin, 1.25rem); color: var(--muted); }
-.inst { display: flex; flex-direction: column; gap: 1.2vmin; }
-[data-title="Try it"] .step { padding: 1.4vmin 1.8vmin; }
-[data-title="Try it"] .step h3 { font-size: clamp(.95rem, 2.4vmin, 1.5rem); margin: .2vmin 0 .5vmin; }
-[data-title="Try it"] .step p { font-size: clamp(.8rem, 1.75vmin, 1.1rem); }
-[data-title="Try it"] h2 { margin-bottom: .5vmin; }
-.inst-k { font-family: var(--display); font-weight: 600; font-size: clamp(.95rem, 2.4vmin, 1.5rem); }
-.inst-k span { font-family: var(--mono); font-weight: 400; font-size: .6em; color: var(--muted); margin-left: .8em; letter-spacing: .05em; }
-.steps.three { grid-template-columns: repeat(3, 1fr); }
-.step code.cmd { display: block; font-family: var(--mono); font-size: clamp(.7rem, 1.6vmin, 1rem); color: var(--accent); background: var(--bg2); border: 1px solid var(--line); border-radius: .6vmin; padding: .7vmin 1vmin; margin: .4vmin 0 .9vmin; overflow-wrap: anywhere; }
-.step code.cmd.in { display: inline; padding: .1vmin .6vmin; margin: 0; }
-.outcomes { display: flex; gap: 1.5vmin; flex-wrap: wrap; }
-.pill { border-radius: 999px; padding: .8vmin 2.2vmin; font-family: var(--display); font-weight: 600; font-size: clamp(.95rem, 2.4vmin, 1.5rem); border: 1.5px solid var(--line); }
-.pill.run { background: var(--accent-deep); border-color: var(--accent-deep); }
-.pill.ask { border-color: var(--outside); color: var(--outside); }
-figure { margin: 0; }
-svg { display: block; width: 100%; height: auto; max-height: 62vh; font-family: var(--body); }
-svg text { fill: var(--fg); font-size: 13px; }
-svg .s { font-size: 11px; fill: var(--muted); }
-svg .mono { font-family: var(--mono); }
-svg .bar { fill: var(--accent); }
-svg .bar.dim { fill: var(--t1); }
-svg .grid { stroke: var(--line); stroke-width: 1; }
-svg .box { fill: var(--panel); stroke: var(--line); }
-svg .arrow { stroke: var(--accent); stroke-width: 1.6; fill: none; }
-svg .arrow.out { stroke: var(--outside); stroke-dasharray: 6 4; }
-svg .boundary { stroke: var(--outside); stroke-width: 1.5; stroke-dasharray: 8 5; }
-.measured { display: grid; grid-template-columns: 3fr 2fr; gap: 3vmin; align-items: center; }
-.measured figure svg { max-height: 56vh; }
-.measured-side { display: flex; flex-direction: column; gap: 2vmin; min-width: 0; }
-.measured-side .stat { font-size: clamp(2rem, 7vmin, 5rem); }
-.measured-side p { font-size: clamp(.85rem, 2vmin, 1.25rem); color: var(--muted); }
-@media (max-width: 720px) { .measured { grid-template-columns: 1fr; } }
-/* Mock screens: phone at 9:19.5 (Pixel), laptop screen at 16:10 (MacBook). Type scales with each frame via cqw. */
-.scn { display: flex; gap: 1vmin; flex-wrap: wrap; }
-.scn button { background: transparent; border: 1px solid var(--line); color: var(--muted); font: 500 clamp(.75rem, 1.9vmin, 1.1rem) var(--display); padding: .6vmin 1.6vmin; border-radius: 999px; cursor: pointer; }
-.scn button.on { background: var(--accent-deep); border-color: var(--accent-deep); color: #fff; }
-.scn button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.mocks { display: grid; grid-template-columns: 1fr 2.6fr; gap: 3vmin; align-items: center; justify-items: center; }
-.phone-wrap { container-type: inline-size; width: 100%; max-width: min(34vmin, 30vh); }
-.phone { aspect-ratio: 9 / 19.5; width: 100%; background: #0a0f1a; border: .55vmin solid #26324a; border-radius: 4.2vmin; padding: 5cqw 4.5cqw; display: flex; flex-direction: column; gap: 3.5cqw; font-size: 4.6cqw; line-height: 1.3; position: relative; overflow: hidden; }
-.laptop { container-type: inline-size; width: 100%; max-width: min(100%, 86vh); }
-.laptop-screen { aspect-ratio: 16 / 10; background: #000; border: .6vmin solid #2a3447; border-bottom-width: 0; border-radius: 1.6vmin 1.6vmin 0 0; padding: 1.2cqw; overflow: hidden; }
-.laptop-base { height: 2.2cqw; background: linear-gradient(#3a465e, #26324a); border-radius: 0 0 1.4vmin 1.4vmin; margin: 0 -2cqw; }
-.laptop .term { height: 100%; border-radius: .6vmin; }
-.laptop .term pre { font-size: 1.95cqw; line-height: 1.55; padding: 1.2cqw 1.6cqw; }
-.laptop .t-bar { font-size: 1.5cqw; padding: .7cqw 1.2cqw; }
-.laptop .t-bar span { width: 1cqw; height: 1cqw; }
-.p-status { display: flex; justify-content: space-between; font-family: var(--mono); font-size: .85em; color: var(--muted); }
-.p-tiers { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.5cqw; }
-.p-t { border-radius: 2cqw; padding: 1.6cqw 1cqw; text-align: center; font-size: .72em; line-height: 1.2; color: var(--muted); background: var(--panel); border: 1px solid var(--line); }
-.p-t b { display: block; font-family: var(--mono); font-weight: 500; }
-.p-t.on { background: var(--accent-deep); color: #fff; border-color: var(--accent-deep); }
-.p-t.off { opacity: .7; }
-.p-t.lock { border-color: var(--outside); color: var(--outside); }
-.p-t.ask { border-color: var(--outside); color: var(--outside); border-style: dashed; }
-.p-chat { display: flex; flex-direction: column; gap: 3cqw; flex: 1; min-height: 0; overflow: hidden; }
-.p-msg { border-radius: 4cqw; padding: 2.6cqw 3.4cqw; max-width: 92%; }
-.p-msg.me { align-self: flex-end; background: var(--accent-deep); color: #fff; border-bottom-right-radius: 1cqw; }
-.p-msg.ai { align-self: flex-start; background: var(--panel); border-bottom-left-radius: 1cqw; }
-.p-att { display: flex; gap: 1.8cqw; margin-top: 2.4cqw; align-items: flex-end; }
-.p-att figure { margin: 0; flex: 1 1 0; min-width: 0; }
-.p-att figure.doc { flex: 0 0 42%; }
-.p-att figure.wide { flex: 2.2 1 0; }
-.p-att img { display: block; width: 100%; height: auto; border-radius: 1.6cqw; border: 1px solid var(--line); background: #fff; }
-.p-att figcaption { margin-top: .8cqw; font-family: var(--mono); font-size: .58em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.p-att .arrow { align-self: center; color: var(--muted); font-size: .9em; flex: none; }
-.p-badge { margin-top: 2cqw; font-family: var(--mono); font-size: .72em; color: var(--accent); }
-.p-queue { display: flex; gap: 2cqw; align-items: flex-start; background: var(--bg2); border: 1px dashed var(--line); border-radius: 3cqw; padding: 2.4cqw 3cqw; font-size: .85em; }
-.p-q-dot { width: .9em; height: .9em; border-radius: 50%; border: 2px solid var(--muted); flex: none; margin-top: .2em; }
-.p-dim { color: var(--muted); }
-.p-sheet { background: #1b2436; border-top: 1px solid var(--outside); border-radius: 6cqw 6cqw 0 0; padding: 3.4cqw 4cqw 4.5cqw; margin: 0 -4.5cqw -5cqw; }
-.p-sheet-h { font-family: var(--display); font-weight: 600; font-size: 1.1em; color: var(--outside); }
-.p-sheet-t { margin: 1.6cqw 0 2.6cqw; color: var(--fg); }
-.p-sheet-t mark { background: transparent; color: var(--outside); font-family: var(--mono); font-size: .9em; }
-.p-sheet-b { display: flex; gap: 2cqw; }
-.p-btn { flex: 1; text-align: center; border-radius: 999px; padding: 1.8cqw; border: 1px solid var(--line); font-weight: 500; }
-.p-btn.out { background: var(--outside); color: #1a1208; border-color: var(--outside); }
-.term { background: #070b12; border: 1px solid var(--line); border-radius: 1.2vmin; overflow: hidden; min-width: 0; }
-.t-bar { display: flex; align-items: center; gap: .8vmin; padding: 1vmin 1.4vmin; background: #10172a; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: clamp(.65rem, 1.5vmin, 1rem); color: var(--muted); }
-.t-bar span { width: 1.1vmin; height: 1.1vmin; border-radius: 50%; background: #3a465e; display: inline-block; }
-.t-bar em { font-style: normal; margin-left: auto; margin-right: auto; }
-.term pre { margin: 0; padding: 1.4vmin 1.8vmin; font-family: var(--mono); font-size: clamp(.62rem, 1.65vmin, 1.05rem); line-height: 1.5; color: var(--fg); white-space: pre-wrap; overflow-wrap: anywhere; }
-.t-p { color: var(--accent); font-weight: 500; }
-.t-k { color: var(--muted); display: inline-block; min-width: 5.5ch; }
-.t-ok { color: #7ee2a8; } .t-no { color: var(--muted); } .t-warn { color: var(--outside); } .t-lock { color: var(--outside); }
-.t-cursor { color: var(--accent); }
-@media (prefers-reduced-motion: no-preference) { .t-cursor { animation: blink 1s steps(1) infinite; } @keyframes blink { 50% { opacity: 0; } } }
-@media (max-width: 720px) { .mocks { grid-template-columns: 1fr; } .phone { max-width: 60vw; } }
+.small { font-size: clamp(.8rem, 1.8vmin, 1.15rem); }
+code { font-family: var(--mono); font-size: .9em; color: var(--mesh); }
+.grad { background: linear-gradient(90deg, var(--phone), var(--mesh) 55%, #a9c1ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
-.repo { display: grid; grid-template-columns: 1.25fr 1fr; gap: 2.5vmin; align-items: start; }
-.repo pre.tree { margin: 0; font-family: var(--mono); font-size: clamp(.55rem, 1.45vmin, .95rem); line-height: 1.45; background: var(--panel); border: 1px solid var(--line); border-radius: .8vmin; padding: 1.6vmin 2vmin; overflow-x: auto; min-width: 0; }
-.repo-side { display: flex; flex-direction: column; gap: 1.5vmin; min-width: 0; }
-.repo-side ul { padding-left: 1.1em; margin: 0; }
-.repo-side li { font-size: clamp(.8rem, 1.85vmin, 1.15rem); margin-bottom: .3vmin; }
-.repo-side code { font-family: var(--mono); font-size: .9em; color: var(--accent); }
-@media (max-width: 720px) { .repo { grid-template-columns: 1fr; } }
-@media (max-width: 720px) { .steps, .steps.three { grid-template-columns: 1fr 1fr; } }
-.timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5vmin; }
-.timeline .card { border-top: .6vmin solid var(--accent-deep); }
-.timeline .card:last-child { border-top-color: var(--outside); }
-.timeline code { font-family: var(--mono); font-size: .9em; color: var(--accent); }
-.timeline li { font-size: clamp(.85rem, 2vmin, 1.25rem); margin-bottom: .4vmin; }
-.timeline ul { padding-left: 1.1em; margin: 0; }
-.exit { font-size: clamp(.8rem, 1.8vmin, 1.1rem); color: var(--muted); border-top: 1px solid var(--line); padding-top: 1vmin; margin-top: auto; }
+/* 1 · pitch */
+.pitch { display: grid; grid-template-columns: 1.15fr 1fr; gap: 5vmin; align-items: center; }
+.tagline { font-family: var(--display); font-weight: 600; font-size: clamp(1.3rem, 4.4vmin, 3.2rem); line-height: 1.1; margin-top: 2vmin; text-wrap: balance; }
+.pitch-body { display: flex; flex-direction: column; gap: 2vmin; }
+.pitch-body p { font-size: clamp(.95rem, 2.5vmin, 1.65rem); }
+.pitch-body strong { color: var(--fg); }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2vmin; margin-top: 1vmin; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 1.2vmin; padding: 2vmin 2.2vmin; }
+.stat b { display: block; font-family: var(--display); font-weight: 700; font-size: clamp(1.8rem, 6.5vmin, 4.6rem); line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.stat span { display: block; margin-top: .8vmin; font-size: clamp(.75rem, 1.8vmin, 1.1rem); color: var(--muted); line-height: 1.3; }
+.stat.p b { color: var(--phone); } .stat.m b { color: var(--mesh); } .stat.c b { color: #fff; }
+.hint { font-family: var(--mono); font-size: clamp(11px, 1.5vmin, 14px); color: var(--muted); }
+
+/* 2 · technology */
+.flow { display: flex; align-items: stretch; gap: 0; }
+.flow i { flex: 0 0 2.4vmin; align-self: center; height: 2px; background: var(--mesh); position: relative; }
+.flow i::after { content: ""; position: absolute; right: -1px; top: -5px; border: 6px solid transparent; border-left: 8px solid var(--mesh); border-right: 0; }
+.fl { flex: 1 1 0; min-width: 0; border-radius: 1vmin; padding: 1.2vmin 1.4vmin; border: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; gap: .4vmin; }
+.fl b { font-family: var(--display); font-weight: 600; font-size: clamp(.85rem, 2.1vmin, 1.35rem); line-height: 1.1; }
+.fl span { font-size: clamp(.65rem, 1.5vmin, .95rem); color: var(--muted); line-height: 1.3; }
+.fl.p { border-color: var(--phone-deep); background: linear-gradient(180deg, rgba(45, 212, 191, .14), var(--panel)); } .fl.p b { color: var(--phone); }
+.fl.m { border-color: #2c4f8a; } .fl.m b { color: var(--mesh); }
+.fl.w { border-color: #3456a8; background: linear-gradient(180deg, rgba(59, 111, 224, .2), var(--panel)); } .fl.w b { color: #a9c1ff; }
+.fl.c b { color: #fff; }
+.techs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.6vmin; }
+.tech { background: var(--panel); border: 1px solid var(--line); border-top: .55vmin solid var(--mesh); border-radius: 1vmin; padding: 1.6vmin 2vmin; min-width: 0; display: flex; flex-direction: column; gap: .7vmin; }
+.tech .u { font-family: var(--mono); font-size: clamp(.62rem, 1.4vmin, .9rem); letter-spacing: .08em; text-transform: uppercase; color: var(--mesh); }
+.tech h3 { font-size: clamp(1rem, 2.6vmin, 1.75rem); line-height: 1.1; }
+.tech ul { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: .4vmin; }
+.tech li { font-size: clamp(.74rem, 1.75vmin, 1.12rem); line-height: 1.35; color: #c4cee0; }
+.tech.g1 { border-top-color: #4f8df7; } .tech.g2 { border-top-color: #7aa7ff; } .tech.g3 { border-top-color: #3ddc84; } .tech.g4 { border-top-color: var(--phone); } .tech.g5 { border-top-color: #76b900; } .tech.g6 { border-top-color: #e879f9; }
+.tech.g1 .u { color: #8fb6ff; } .tech.g3 .u { color: #3ddc84; } .tech.g4 .u { color: var(--phone); } .tech.g5 .u { color: #9bd22e; } .tech.g6 .u { color: #f0a6fb; }
+.also { font-size: clamp(.72rem, 1.65vmin, 1.05rem); color: var(--muted); }
+.also b { color: var(--fg); font-weight: 500; }
+
+/* 3 · models */
+.tiers5 { display: grid; grid-template-columns: 1fr 1fr 1fr .78fr .78fr; gap: 1.6vmin; align-items: end; }
+.tier { border-radius: 1.2vmin; padding: 2.2vmin 2.4vmin; display: flex; flex-direction: column; gap: 1vmin; min-width: 0; border: 1px solid var(--line); background: var(--panel); position: relative; }
+.tier .t { font-family: var(--mono); font-size: clamp(.68rem, 1.55vmin, 1rem); letter-spacing: .1em; text-transform: uppercase; }
+.tier .d { font-family: var(--display); font-weight: 700; font-size: clamp(1.2rem, 3.6vmin, 2.5rem); line-height: 1; }
+.tier .model { font-family: var(--display); font-weight: 600; font-size: clamp(1rem, 2.7vmin, 1.85rem); line-height: 1.1; }
+.tier .hw { font-family: var(--mono); font-size: clamp(.62rem, 1.4vmin, .9rem); color: var(--muted); }
+.tier .role { align-self: flex-start; border-radius: 999px; padding: .4vmin 1.4vmin; font-family: var(--display); font-weight: 600; font-size: clamp(.75rem, 1.8vmin, 1.15rem); }
+.tier ul { margin: .4vmin 0 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: .7vmin; }
+.tier li { font-size: clamp(.74rem, 1.72vmin, 1.1rem); line-height: 1.33; }
+.tier .route { margin-top: auto; padding-top: 1vmin; border-top: 1px solid var(--line); font-family: var(--mono); font-size: clamp(.62rem, 1.45vmin, .92rem); color: var(--muted); }
+.tier.t0 { min-height: 40vh; border-color: var(--phone-deep); background: linear-gradient(180deg, rgba(45, 212, 191, .12), var(--panel) 45%); }
+.tier.t0 .t, .tier.t0 .d { color: var(--phone); } .tier.t0 .role { background: var(--phone-deep); color: #d8fffa; }
+.tier.t1 { min-height: 45vh; border-color: #2c4f8a; background: linear-gradient(180deg, rgba(111, 155, 255, .14), var(--panel) 45%); }
+.tier.t1 .t, .tier.t1 .d { color: var(--mesh); } .tier.t1 .role { background: var(--mesh-deep); color: #fff; }
+.tier.t2 { min-height: 50vh; border-color: #3456a8; background: linear-gradient(180deg, rgba(59, 111, 224, .22), var(--panel) 50%); }
+.tier.t2 .t, .tier.t2 .d { color: #a9c1ff; } .tier.t2 .role { background: #22408f; color: #fff; }
+.tier.t3, .tier.t4 { min-height: 50vh; background: transparent; border-style: dashed; }
+.tier.t3 { border-color: #5f8cf0; } .tier.t3 .t, .tier.t3 .model { color: #8fb0ff; } .tier.t3 .role { background: transparent; border: 1px dashed #5f8cf0; color: #8fb0ff; }
+.tier.t4 { border-color: var(--cloud); } .tier.t4 .t, .tier.t4 .model { color: var(--cloud); } .tier.t4 .role { background: transparent; border: 1px dashed var(--cloud); color: var(--cloud); }
+.tier.t3 .route, .tier.t4 .route { border-top-style: dashed; }
+.arrowbar { display: flex; align-items: center; gap: 1.5vmin; font-family: var(--mono); font-size: clamp(.65rem, 1.5vmin, .95rem); color: var(--muted); }
+.arrowbar i { flex: 1; height: 2px; background: linear-gradient(90deg, var(--phone), var(--mesh), #a9c1ff); border-radius: 2px; position: relative; }
+.arrowbar i::after { content: ""; position: absolute; right: -2px; top: -5px; border: 6px solid transparent; border-left: 9px solid #a9c1ff; border-right: 0; }
+
+/* 4 · video */
+.vid-slide { gap: 1.6vmin !important; }
+.vid-grid { display: grid; grid-template-columns: 1.7fr 1fr; gap: 2.4vmin; align-items: center; }
+.qs { display: flex; flex-direction: column; gap: 1.4vmin; min-width: 0; }
+.qs-intro { font-size: clamp(.78rem, 1.8vmin, 1.15rem); color: var(--muted); }
+.q { background: var(--panel); border: 1px solid var(--line); border-left: .6vmin solid var(--phone); border-radius: 1vmin; padding: 1.4vmin 1.8vmin; display: flex; flex-direction: column; gap: .7vmin; }
+.q.m { border-left-color: var(--mesh); } .q.w { border-left-color: #a9c1ff; }
+.qn { font-family: var(--mono); font-size: clamp(.6rem, 1.35vmin, .88rem); color: var(--muted); letter-spacing: .04em; }
+.q.p .qn span { color: var(--phone); } .q.m .qn span { color: var(--mesh); } .q.w .qn span { color: #a9c1ff; }
+.q q { font-family: var(--display); font-weight: 600; font-size: clamp(.95rem, 2.35vmin, 1.55rem); line-height: 1.2; quotes: "\201C" "\201D"; }
+.q p { font-size: clamp(.7rem, 1.6vmin, 1rem); color: #c4cee0; }
+.player { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 1.4vmin; overflow: hidden; border: 1px solid var(--line); background: #000; box-shadow: 0 2vmin 6vmin rgba(0, 0, 0, .5); }
+.player video { display: block; width: 100%; height: 100%; object-fit: contain; background: #000; }
+.play { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(5, 8, 15, .35); border: 0; cursor: pointer; color: #fff; transition: background .2s; }
+.play:hover, .play:focus-visible { background: rgba(5, 8, 15, .15); outline: none; }
+.play .disc { width: clamp(64px, 15vmin, 150px); aspect-ratio: 1; border-radius: 50%; background: rgba(255, 255, 255, .95); display: grid; place-items: center; box-shadow: 0 0 0 1.2vmin rgba(255, 255, 255, .18), 0 1.5vmin 4vmin rgba(0, 0, 0, .5); transition: transform .2s; }
+.play:hover .disc, .play:focus-visible .disc { transform: scale(1.06); }
+.play .disc svg { width: 38%; height: 38%; margin-left: 8%; fill: var(--bg); }
+.play .lab { position: absolute; bottom: 3vmin; left: 0; right: 0; text-align: center; font-family: var(--mono); font-size: clamp(11px, 1.6vmin, 15px); letter-spacing: .08em; color: rgba(255, 255, 255, .9); text-shadow: 0 1px 4px #000; }
+.player.playing .play { display: none; }
+.player.paused .play { display: grid; }
+/* 5 · screenshots */
+.shots { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1.6vmin; align-items: start; }
+.shot { margin: 0; display: flex; flex-direction: column; gap: 1vmin; min-width: 0; }
+.shot button { padding: 0; border: 0; background: none; cursor: zoom-in; border-radius: 1.6vmin; display: block; }
+.shot button:focus-visible { outline: 2px solid var(--mesh); outline-offset: 3px; }
+.shot img { display: block; width: 100%; max-height: 54vh; object-fit: cover; object-position: top; aspect-ratio: 1080 / 2410; border-radius: 1.6vmin; border: .4vmin solid #222c40; background: #000; }
+.shot figcaption { font-size: clamp(.68rem, 1.55vmin, 1rem); line-height: 1.3; color: var(--muted); }
+.shot figcaption b { display: block; color: var(--fg); font-family: var(--display); font-weight: 600; font-size: 1.12em; margin-bottom: .2vmin; }
+.shot .tag { display: inline-block; font-family: var(--mono); font-size: .82em; border-radius: 999px; padding: 0 .7em; margin-bottom: .5vmin; border: 1px solid; }
+.tag.p { color: var(--phone); border-color: var(--phone-deep); } .tag.m { color: var(--mesh); border-color: #2c4f8a; } .tag.w { color: #a9c1ff; border-color: #3456a8; }
+.lightbox { position: fixed; inset: 0; z-index: 10; background: rgba(4, 7, 13, .92); display: none; place-items: center; cursor: zoom-out; padding: 3vmin; }
+.lightbox.on { display: grid; }
+.lightbox img { max-height: 94vh; max-width: 94vw; border-radius: 2vmin; border: .5vmin solid #222c40; }
+.lightbox p { position: absolute; bottom: 2vmin; left: 0; right: 0; text-align: center; font-family: var(--mono); font-size: clamp(11px, 1.5vmin, 14px); color: var(--muted); }
+
+/* 6 · use cases */
+.uses { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.8vmin; }
+.use { background: var(--panel); border: 1px solid var(--line); border-radius: 1.1vmin; padding: 1.8vmin 2vmin; display: flex; flex-direction: column; gap: .9vmin; min-width: 0; }
+.use h3 { font-size: clamp(1rem, 2.6vmin, 1.75rem); line-height: 1.1; }
+.use .why { font-size: clamp(.7rem, 1.6vmin, 1rem); color: var(--muted); }
+.use ol { list-style: none; margin: .3vmin 0 0; padding: 0; display: flex; flex-direction: column; gap: .7vmin; }
+.use li { display: grid; grid-template-columns: 4.2ch 1fr; gap: .8vmin; font-size: clamp(.72rem, 1.68vmin, 1.06rem); line-height: 1.3; align-items: baseline; }
+.use li span { font-family: var(--mono); font-size: .82em; font-weight: 500; text-align: center; border-radius: .5vmin; padding: .1vmin 0; }
+.use li .p { background: var(--phone-deep); color: #d8fffa; } .use li .m { background: var(--mesh-deep); color: #fff; } .use li .w { background: #22408f; color: #fff; }
+
+/* 7 · try it */
+.try { display: grid; grid-template-columns: 1fr 30vmin; gap: 3vmin; align-items: stretch; }
+.try-steps { display: flex; flex-direction: column; gap: 1.3vmin; min-width: 0; }
+.row-k { font-family: var(--display); font-weight: 600; font-size: clamp(.95rem, 2.3vmin, 1.5rem); }
+.row-k span { font-family: var(--mono); font-weight: 400; font-size: .6em; color: var(--muted); margin-left: .8em; letter-spacing: .05em; }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2vmin; }
+.steps.three { grid-template-columns: repeat(3, 1fr); }
+.step { background: var(--panel); border: 1px solid var(--line); border-radius: .9vmin; padding: 1.2vmin 1.6vmin; min-width: 0; }
+.step .n { font-family: var(--mono); color: var(--mesh); font-size: clamp(.65rem, 1.45vmin, .95rem); letter-spacing: .1em; }
+.step h3 { font-size: clamp(.9rem, 2.2vmin, 1.4rem); margin: .2vmin 0 .5vmin; }
+.step p { font-size: clamp(.72rem, 1.6vmin, 1rem); color: var(--muted); line-height: 1.35; }
+.step code.cmd { display: block; font-size: clamp(.64rem, 1.45vmin, .92rem); background: var(--bg2); border: 1px solid var(--line); border-radius: .6vmin; padding: .6vmin .9vmin; margin: .3vmin 0 .6vmin; overflow-wrap: anywhere; }
+.step code.in { display: inline; padding: .1vmin .5vmin; background: var(--bg2); border: 1px solid var(--line); border-radius: .5vmin; }
+.qr { background: var(--panel); border: 1px solid var(--line); border-radius: 1.4vmin; padding: 2.4vmin; display: flex; flex-direction: column; gap: 1.6vmin; align-items: center; justify-content: center; text-align: center; }
+.qr svg { width: 100%; height: auto; background: #fff; border-radius: 1vmin; padding: 1.2vmin; }
+.qr .url { font-family: var(--mono); font-size: clamp(.7rem, 1.7vmin, 1.1rem); color: var(--fg); overflow-wrap: anywhere; }
+
 .hud { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; align-items: center;
   padding: 1.2vmin max(6vmin, env(safe-area-inset-right, 0px)) calc(1.2vmin + env(safe-area-inset-bottom, 0px)) max(6vmin, env(safe-area-inset-left, 0px));
   font-family: var(--mono); font-size: clamp(11px, 1.6vmin, 15px); color: var(--muted); }
 .hud button { background: transparent; border: 1px solid var(--line); color: var(--muted); font: inherit; padding: .4em .9em; border-radius: 999px; cursor: pointer; }
-.hud button:hover, .hud button:focus-visible { color: var(--fg); border-color: var(--accent); outline: none; }
-.progress { position: fixed; left: 0; top: 0; height: .5vmin; background: var(--accent); width: 0; transition: width .25s; }
+.hud button:hover, .hud button:focus-visible { color: var(--fg); border-color: var(--mesh); outline: none; }
+.progress { position: fixed; left: 0; top: 0; height: .5vmin; background: linear-gradient(90deg, var(--phone), var(--mesh)); width: 0; transition: width .25s; }
 @media (prefers-reduced-motion: reduce) { .progress { transition: none; } }
-@media (max-width: 720px) {
-  .tiers, .steps, .timeline { grid-template-columns: repeat(2, 1fr); }
-  .tier { min-height: 0 !important; }
+@media (max-width: 820px) {
   .slide { overflow-y: auto; justify-content: flex-start; }
+  .pitch, .try { grid-template-columns: 1fr; }
+  .techs, .uses, .steps, .steps.three { grid-template-columns: 1fr 1fr; }
+  .vid-grid { grid-template-columns: 1fr; } .flow { flex-wrap: wrap; gap: 1vmin; } .flow i { display: none; }
+  .tiers5 { grid-template-columns: 1fr; } .tier { min-height: 0 !important; }
+  .shots { grid-template-columns: repeat(3, 1fr); }
 }
 </style>
 </head>
@@ -202,218 +197,217 @@ svg .boundary { stroke: var(--outside); stroke-width: 1.5; stroke-dasharray: 8 5
 <div class="progress" id="progress"></div>
 <div class="deck" id="deck">
 
-<!-- 1 -->
-<section class="slide" data-title="Title">
-  <div class="eyebrow">Data sovereignty · Gemma 4 · LiteRT-LM</div>
-  <h1>Gem<br>Mesh</h1>
-  <p class="big"><strong>Your data, your devices, your rules.</strong> Every gem is a node, and your devices are the mesh. Open infrastructure for private AI apps: your phone, your laptop and your office GPUs act as one. Every request is checked on your own device and sent to the smallest model that can answer it. Nothing leaves your hardware unless you say so.</p>
-  <p class="muted mono">Space or → to advance · ← to go back</p>
-</section>
-
-<!-- 2 -->
-<section class="slide" data-title="The bind">
-  <div class="eyebrow">The problem</div>
-  <h2>Anyone who wants a private assistant is stuck between two bad options</h2>
-  <div class="row">
-    <div class="card bad">
-      <div class="k">Option A</div>
-      <h3>Cloud assistant</h3>
-      <p>Convenient everywhere. But every client name, salary and case file lands on someone else's servers, under their terms and their jurisdiction.</p>
+<!-- 1 · elevator pitch -->
+<section class="slide" data-title="Gem Mesh">
+  <div class="eyebrow">The Google Gemma Hardware Hackathon · AGI House · Gemma 4 on LiteRT-LM</div>
+  <div class="pitch">
+    <div>
+      <h1><span class="grad">Gem Mesh</span></h1>
+      <div class="tagline">Your phone, laptop and workstation, working as one private AI.</div>
     </div>
-    <div class="card bad">
-      <div class="k">Option B</div>
-      <h3>One local model</h3>
-      <p>Private. But slow on a phone, gone when the laptop closes, and too small for real work.</p>
-    </div>
-    <div class="card good">
-      <div class="k">The mesh</div>
-      <h3>Data sovereignty, at full strength</h3>
-      <p>Your own devices as tiers: small model on the phone, bigger on the laptop, biggest in the office. You own the hardware and the rules. A frontier model stays an option, per request, for public text only. One assistant, one memory, one rule about where text may go.</p>
+    <div class="pitch-body">
+      <p class="muted">Today you choose between a cloud assistant that sees everything and one local model too small for real work.</p>
+      <p><strong>Gem Mesh turns the devices you already own into one assistant.</strong> Switch them on and they find each other on Wi-Fi or a phone hotspot: no accounts, no setup. The phone hears, sees and checks every request, then hands it to the smallest Gemma that can do the job: <strong>E4B</strong> on the Pixel, <strong>26B</strong> on the laptop, <strong>31B</strong> on the workstation.</p>
+      <p class="muted"><strong>Data sovereignty by default:</strong> your data stays on hardware you own, under rules you set. Open source, built on LiteRT-LM, no cloud anywhere in the loop.</p>
     </div>
   </div>
-  <p class="muted">Who: anyone whose conversations are their own business. Professionals with client data, people with a journal or a companion, families, developers.</p>
+  <div class="stats">
+    <div class="stat p"><b>0 setup</b><span>devices discover each other on the network (mDNS) and join the mesh by themselves</span></div>
+    <div class="stat m"><b>4</b><span>Gemma 4 sizes, each on the device it fits: E4B · 12B · 26B · 31B</span></div>
+    <div class="stat c"><b>0 bytes</b><span>left the mesh. Your data, your devices, your rules, even offline</span></div>
+  </div>
+  <p class="hint">→ or Space to advance · ← to go back</p>
 </section>
 
-<!-- 3 -->
-<section class="slide" data-title="Five tiers">
-  <div class="eyebrow">The idea</div>
-  <h2>Every gem is a tier node: from the phone in your pocket to frontier-class models you host yourself.</h2>
-  <div class="tiers">
-    <div class="tier t0"><div class="t">T0</div><div class="d">Phone</div><div class="p">Gemma 4 E4B · 4B effective</div><div class="sp">~25 tok/s · iPhone 17 Pro GPU<br>Pixel 11 TPU: not yet published</div><div class="m">memory authority<br>privacy check<br>sees photos</div></div>
-    <div class="tier t1"><div class="t">T1</div><div class="d">MacBook</div><div class="p">Gemma 4 26B · MoE, 4B active</div><div class="sp">~150 tok/s · M5 Max MacBook Pro<br>69 tok/s · M3 Max MacBook Pro (ours)</div><div class="m">works on a plane</div></div>
-    <div class="tier t2"><div class="t">T2</div><div class="d">Workstation</div><div class="p">Gemma 4 31B · dense</div><div class="sp">~70 tok/s · RTX 5090, 4-bit (est.)<br>~60 tok/s · M5 Ultra, 8-bit + MTP</div><div class="m">M5 Ultra Mac Studio or dual RTX 5090: the 31B comfortably<br>thinking on, long context<br>always on, shared</div></div>
-    <div class="tier t3"><div class="t">T3 · optional</div><div class="d">Private servers</div><div class="p">Kimi K3 · 2.8T, 104B active<br>DeepSeek V4 Pro · 1.6T, 49B active</div><div class="sp">~190 tok/s · Kimi K3, 8× B300<br>~90 tok/s · DeepSeek V4 Pro</div><div class="m">open frontier-class models<br>on your network; VPN from outside<br>vision, not in POC</div></div>
-    <div class="tier t4"><div class="t">T4 · optional</div><div class="d">Frontier</div><div class="p">Gemini 4 Argon</div><div class="sp">~105 tok/s · Google AI Studio<br>size not published</div><div class="m">public text only<br>you approve each request</div></div>
+<!-- 2 · technology -->
+<section class="slide" data-title="Technology">
+  <div class="eyebrow">Technology · our sponsors' stack, end to end</div>
+  <h2>Gemma on LiteRT-LM, from the Pixel to the GPU</h2>
+  <div class="flow" aria-label="How a request flows through the stack">
+    <div class="fl p"><b>Voice · photo · file</b><span>camera, mic and files on the phone</span></div><i></i>
+    <div class="fl p"><b>Gemma 4 E4B</b><span>LiteRT-LM on the Pixel 11 Pro GPU</span></div><i></i>
+    <div class="fl p"><b>Router + privacy check</b><span>on the phone, before anything moves</span></div><i></i>
+    <div class="fl m"><b>Auto-discovery</b><span>mDNS on Wi-Fi or hotspot</span></div><i></i>
+    <div class="fl w"><b>Gemma 4 12B–31B</b><span>LiteRT-LM on your Macs</span></div><i></i>
+    <div class="fl c"><b>Answer + badge</b><span>which device, which model, 0 bytes out</span></div>
   </div>
-  <p class="muted">Gemma from the phone to the workstation; private servers run trillion-parameter open models on hardware you control. Speeds are the best published per-user decode rates on high-end hardware; some are estimates, and ours run lower. Sensitive requests never leave T0 to T3, and T4 is a consent dialog, never a default.</p>
+  <div class="techs">
+    <div class="tech g1"><div class="u">Google DeepMind</div><h3>Gemma 4 on every tier</h3><ul><li>E4B on the phone: it hears and sees</li><li>12B and 26B MoE on laptops; 26B thinking and 31B on workstations</li><li>EmbeddingGemma 2 (270M) indexes your memory</li></ul></div>
+    <div class="tech g2"><div class="u">Google AI Edge</div><h3>LiteRT-LM, one engine</h3><ul><li>Android SDK on the phone, Python engine on Macs and Linux</li><li>GPU on the Pixel and on Apple silicon</li><li><code>.litertlm</code> builds from litert-community; session KV reuse, tools, vision, audio</li></ul></div>
+    <div class="tech g4"><div class="u">Google Pixel</div><h3>Pixel 11 Pro is T0</h3><ul><li>Gemma 4 E4B on its GPU</li><li>Holds your memory and runs the privacy check</li><li>Answers alone in Airplane Mode</li></ul></div>
+    <div class="tech g6"><div class="u">AGI, Inc.</div><h3>Mobile-use MCP</h3><ul><li>Lets the assistant act inside apps on the phone</li><li>Plugs in as MCP tools the mesh can call</li><li>Each action asks first, like every tool in the mesh</li></ul></div>
+  </div>
+  <p class="also"><b>Open-source glue:</b> zeroconf mDNS · FastAPI nodes with an OpenAI-compatible API · a per-mesh certificate authority for HTTPS pairing · Pillow, pypdf, fpdf2 for photo and PDF actions · SwiftUI iPhone app on the same engine.</p>
 </section>
 
-<!-- 4 -->
-<section class="slide" data-title="Routing">
-  <div class="eyebrow">How a request moves</div>
-  <h2>Decided on your device, before any text leaves it</h2>
-  <div class="steps">
-    <div class="step"><div class="n">1</div><h3>Rules</h3><p>Keys, emails, paths, your own terms. A hit is sensitive, no appeal.</p></div>
-    <div class="step"><div class="n">2</div><h3>Local classifier</h3><p>Gemma 4 on the phone or laptop labels public or sensitive. Unsure counts as sensitive.</p></div>
-    <div class="step"><div class="n">3</div><h3>Tier window</h3><p>Difficulty sets the floor. Long or hard work prefers the effort tier. Sensitivity caps the ceiling.</p></div>
-    <div class="step"><div class="n">4</div><h3>Reachable nodes</h3><p>Live table from discovery on Wi-Fi or hotspot. Lowest tier that fits wins.</p></div>
-  </div>
-  <div class="outcomes">
-    <span class="pill run">Run on the chosen node</span>
-    <span class="pill">Queue until a node returns</span>
-    <span class="pill ask">Ask approval for the frontier</span>
-  </div>
-  <p class="muted">Every answer carries a badge: which device, which model, whether anything left the mesh. Web search works in any conversation; only the query leaves, and it is checked first. Conversations themselves never leave for an outside model. Rules, classifier prompt and tier policy are files you edit.</p>
-</section>
-
-<!-- 5 -->
-<section class="slide" data-title="Data sovereignty">
-  <div class="eyebrow">Data sovereignty</div>
-  <h2>Your data stays on hardware you own, under rules you set.</h2>
-  <figure>
-  <svg viewBox="0 0 1000 300" role="img" aria-label="Two user pairs, each a phone and laptop sharing memory inside the pair, send requests to a shared pool of workstations that keep no state. A dashed boundary on the right separates an optional frontier model; the only arrow crossing it is labelled approved redacted text.">
-    <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker>
-    <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--outside)"/></marker></defs>
-    <!-- pair A -->
-    <rect x="20" y="30" width="300" height="100" rx="8" class="box"/>
-    <text x="34" y="54" class="mono s">USER A</text>
-    <rect x="34" y="64" width="120" height="54" rx="6" fill="var(--t0)"/><text x="46" y="86">Phone · E4B</text><text x="46" y="104" class="s">memory authority</text>
-    <rect x="186" y="64" width="120" height="54" rx="6" fill="var(--t1)"/><text x="198" y="86">MacBook · 26B</text><text x="198" y="104" class="s">memory mirror</text>
-    <line x1="154" y1="91" x2="186" y2="91" class="arrow" marker-end="url(#a)"/>
-    <!-- pair B -->
-    <rect x="20" y="160" width="300" height="100" rx="8" class="box"/>
-    <text x="34" y="184" class="mono s">USER B</text>
-    <rect x="34" y="194" width="120" height="54" rx="6" fill="var(--t0)"/><text x="46" y="216">Phone · E4B</text><text x="46" y="234" class="s">memory authority</text>
-    <rect x="186" y="194" width="120" height="54" rx="6" fill="var(--t1)"/><text x="198" y="216">MacBook · 26B</text><text x="198" y="234" class="s">memory mirror</text>
-    <line x1="154" y1="221" x2="186" y2="221" class="arrow" marker-end="url(#a)"/>
-    <!-- pool -->
-    <rect x="440" y="30" width="300" height="230" rx="8" class="box"/>
-    <text x="454" y="54" class="mono s">SHARED POOL · STATELESS</text>
-    <rect x="454" y="70" width="130" height="70" rx="6" fill="var(--t2)"/><text x="466" y="94">Mac Studio M5</text><text x="466" y="112" class="s">Ultra · Gemma 4 31B</text><text x="466" y="128" class="s">nothing persisted</text>
-    <rect x="596" y="70" width="130" height="70" rx="6" fill="var(--t2)"/><text x="608" y="94">Dual 5090</text><text x="608" y="112" class="s">Gemma 4 31B</text><text x="608" y="128" class="s">nothing persisted</text>
-    <rect x="454" y="160" width="272" height="80" rx="6" fill="none" stroke="var(--t3)" stroke-dasharray="6 4"/><text x="466" y="186">Private servers · vision</text><text x="466" y="206" class="s">Kimi K3 · DeepSeek V4 Pro</text><text x="466" y="224" class="s">any OpenAI-compatible server, stateless</text>
-    <!-- arrows -->
-    <path d="M320,80 C380,80 380,105 440,105" class="arrow" marker-end="url(#a)"/>
-    <path d="M320,210 C380,210 380,190 440,190" class="arrow" marker-end="url(#a)"/>
-    <text x="380" y="150" text-anchor="middle" class="s">requests carry</text><text x="380" y="164" text-anchor="middle" class="s">their own context</text>
-    <!-- boundary -->
-    <line x1="800" y1="10" x2="800" y2="290" class="boundary"/>
-    <rect x="830" y="70" width="150" height="110" rx="8" fill="none" stroke="var(--outside)" stroke-dasharray="6 4"/>
-    <text x="842" y="96" fill="var(--outside)">Frontier · optional</text>
-    <text x="842" y="118" class="s">public text only</text><text x="842" y="136" class="s">redacted first</text><text x="842" y="154" class="s">you approve each one</text>
-    <path d="M320,60 C560,0 700,10 830,100" class="arrow out" marker-end="url(#ao)"/>
-    <text x="600" y="22" text-anchor="middle" class="s" fill="var(--outside)">approved redacted text only</text>
-    <text x="792" y="282" text-anchor="end" class="mono s" fill="var(--outside)">mesh boundary</text>
-  </svg>
-  </figure>
-  <p class="muted">Memory lives only in the user's own phone and laptop. Shared machines compute and remember nothing. The only path out is text the user approved. Once paired, devices talk only to each other, encrypted, and a stranger's node on the same Wi-Fi gets nothing. Pairs never talk to each other; remove servers or the frontier and nothing else changes.</p>
-</section>
-
-<!-- 6 -->
-<section class="slide" data-title="Four moments">
-  <div class="eyebrow">A day with it</div>
-  <h2>Same assistant, four networks</h2>
-  <div class="cols">
-    <div class="card"><div class="k">Office Wi-Fi</div><h3>Full power</h3><p>Phone and laptop find the workstations over mDNS. Heavy work goes there. Both devices stay thin.</p></div>
-    <div class="card"><div class="k">On a plane</div><h3>Laptop as backbone</h3><p>The phone's hotspot carries discovery. The 26B on the MacBook answers at 60 to 70 tokens a second.</p></div>
-    <div class="card"><div class="k">Phone alone</div><h3>Still useful</h3><p>E2B answers from local memory, does simple tool tasks, and queues the rest for when a bigger tier returns.</p></div>
-    <div class="card"><div class="k">Need the frontier</div><h3>You decide</h3><p>Only for public text. You see the redacted payload before it goes. A policy file can set it to never.</p></div>
-  </div>
-</section>
-
-<!-- 6b -->
-<section class="slide" data-title="What you build on it">
-  <div class="eyebrow">Infrastructure, not an app</div>
-  <h2>Gem Mesh is the framework. You build the app.</h2>
-  <div class="two">
-    <div class="card"><div class="k">Example app · Work</div><h3>A client-safe assistant</h3><p>A firm builds it for its lawyers or HR team. Its rule file names clients and matters, so their text never leaves the firm's devices. Documents in, memos and PDFs out, each change approved.</p></div>
-    <div class="card"><div class="k">Example app · Companion</div><h3>A private companion</h3><p>A developer builds it for one person. It lives on the phone, remembers what it is told, and keeps photos and conversations on that person's devices; it is sharper when their Mac is near.</p></div>
-  </div>
-  <p class="muted">The mesh gives every app the same things: routing across devices, the privacy check, memory, the queue, tools with approval. An app adds its own policy file, persona and screens.</p>
-</section>
-
-<!-- 9 -->
-<section class="slide" data-title="What's built">
-  <div class="eyebrow">POC on hardware we already have</div>
-  <h2>A Pixel 11 and a MacBook, nothing else</h2>
-  <div class="row">
-    <div class="card"><div class="k">Mesh</div><h3>Node server and discovery</h3><p>OpenAI-compatible server around LiteRT-LM with session KV reuse, advertising itself over mDNS with tier and load.</p></div>
-    <div class="card"><div class="k">Thin clients</div><h3>Router, memory, queue</h3><p>Rules, local classifier, tier window, network detected automatically. Memory remembers facts from plain chat, held on the mobile side and mirrored to the laptop. Tasks queue until a tier that fits returns. Web search, a demo file folder, <code>/think</code> and an approval-gated <code>/frontier</code>.</p></div>
-    <div class="card"><div class="k">Actions</div><h3>Files and photos, on your devices</h3><p>The chats create and edit text, PDF and image files: memos, stamps, page edits, captions, collages. The phone's E4B can see and hear: photos are judged and fixed on the device, their GPS location removed before sharing, and speech is typed for you without leaving the phone. Every change is shown and approved; the old version is kept.</p></div>
-  </div>
-  <p class="muted">The demo runs on the pair alone; a workstation is a bonus tier, not a dependency. Until the Pixel app lands, developers use a phone stand-in on the Mac (<code>./install.sh --dev</code>). One <code>./install.sh</code> sizes the models to any Apple silicon Mac, from E2B on 8 GB to the 26B on 32 GB and up.</p>
-</section>
-
-<!-- 10 -->
-<section class="slide" data-title="Thin clients">
-  <div class="eyebrow">Two example apps on the mesh · mock-ups · four networks</div>
-  <div class="scn" data-axis="use" role="tablist" aria-label="Use case">
-    <button type="button" role="tab" data-scn="work" class="on">W · Work · law firm</button>
-    <button type="button" role="tab" data-scn="companion">C · Companion</button>
-  </div>
-  <div class="scn" data-axis="mode" role="tablist" aria-label="Connection mode">
-    <button type="button" role="tab">1 · Phone only</button>
-    <button type="button" role="tab">2 · Airplane + MacBook</button>
-    <button type="button" role="tab">3 · Coffee shop · VPN</button>
-    <button type="button" role="tab" class="on">4 · Office · Home</button>
-  </div>
-  <div class="mocks">
-    <div class="phone-wrap"><div class="phone" role="img" aria-label="Mock-up of the Android app for the selected scenario: a tier strip, a chat with a provenance badge, a queued task, and the frontier approval sheet.">
-      <div class="p-status"><span>9:41</span><span id="ph-net"></span></div>
-      <div class="p-tiers" id="ph-tiers"></div>
-      <div class="p-chat">
-        <div class="p-msg me" id="ph-me"></div>
-        <div class="p-msg ai"><span id="ph-ai"></span><div class="p-att" id="ph-att" hidden></div><div class="p-badge" id="ph-badge"></div></div>
-        <div class="p-queue"><span class="p-q-dot"></span><div><b>Queue</b> <span id="ph-q"></span><br><span class="p-dim" id="ph-q-sub"></span></div></div>
-      </div>
-      <div class="p-sheet">
-        <div class="p-sheet-h">Send to Gemini?</div>
-        <div class="p-sheet-t" id="ph-sheet"></div>
-        <div class="p-sheet-b"><span class="p-btn out">Allow once</span><span class="p-btn">Keep local</span></div>
-      </div>
-    </div></div>
-    <div class="laptop" role="img" aria-label="Mock-up of the gem-mesh terminal for the selected scenario: nodes and tiers, the prompt, routing log lines, tool calls, the answer, a provenance badge and the queue.">
-      <div class="laptop-screen">
-        <div class="term">
-          <div class="t-bar"><span></span><span></span><span></span><em id="tm-title">gem-mesh</em></div>
-          <pre id="tm"></pre>
-        </div>
-      </div>
-      <div class="laptop-base"></div>
+<!-- 3 · models -->
+<section class="slide" data-title="Right-sized Gemma">
+  <div class="eyebrow">Which model, where, and why</div>
+  <h2>Each device runs the biggest Gemma it can. Bigger tiers are optional.</h2>
+  <div class="tiers5">
+    <div class="tier t0">
+      <div class="t">T0 · Phone</div>
+      <div class="model">Gemma 4 E4B</div>
+      <div class="hw">4B effective · E2B on 6 GB · Pixel 11 Pro GPU</div>
+      <span class="role">Ears and eyes</span>
+      <ul>
+        <li>Only the E models hear and see: voice and photos stay on the phone.</li>
+        <li>Always with you; answers alone in Airplane Mode.</li>
+        <li>Checks every request first and holds your memory.</li>
+      </ul>
+      <div class="route">up to 1,500 tokens stays here</div>
+    </div>
+    <div class="tier t1">
+      <div class="t">T1 · Laptop</div>
+      <div class="model">Gemma 4 12B → 26B</div>
+      <div class="hw">12B on 24 GB · 26B MoE on 32 GB+</div>
+      <span class="role">The analyst</span>
+      <ul>
+        <li>26B mixture of experts, 4B active: 69 tok/s on our M3 Max.</li>
+        <li>Reads long private documents, compares, drafts.</li>
+        <li>Comes on the plane, over the phone's hotspot.</li>
+      </ul>
+      <div class="route">above 1,500 tokens</div>
+    </div>
+    <div class="tier t2">
+      <div class="t">T2 · Workstation</div>
+      <div class="model">Gemma 4 26B → 31B</div>
+      <div class="hw">26B thinking · 31B dense · RTX 5090 or M5 Ultra</div>
+      <span class="role">The strategist</span>
+      <ul>
+        <li>Thinking on and a bigger window: math across clauses, multi-step work.</li>
+        <li>About 3× faster than the laptop on the same 26B.</li>
+        <li>Shared and always on, yet keeps nothing.</li>
+      </ul>
+      <div class="route">above 3,000 tokens, preferred</div>
+    </div>
+    <div class="tier t3">
+      <div class="t">T3 · Optional</div>
+      <div class="model">Private servers</div>
+      <div class="hw">Kimi K3 · DeepSeek V4 Pro</div>
+      <span class="role">Open frontier-class</span>
+      <ul>
+        <li>Trillion-parameter open models on hardware you control.</li>
+        <li>Any OpenAI-compatible server on your network or VPN.</li>
+      </ul>
+      <div class="route">vision · not in the demo</div>
+    </div>
+    <div class="tier t4">
+      <div class="t">T4 · Optional</div>
+      <div class="model">Frontier</div>
+      <div class="hw">Gemini · Google AI Studio</div>
+      <span class="role">Ask first</span>
+      <ul>
+        <li>Public text only, redacted first.</li>
+        <li>You approve each request; a policy file can set it to never.</li>
+      </ul>
+      <div class="route">off today · 0 asks</div>
     </div>
   </div>
-  <p class="muted" id="scn-note"></p>
+  <div class="arrowbar"><span>smaller · instant · private by default</span><i></i><span>bigger · deeper · only if you allow it</span></div>
+  <p class="muted small">The router picks the smallest tier that fits, and private content caps the ceiling at your own devices. In the demo: a Pixel 11 Pro on E4B, a MacBook on the 26B, and a second MacBook playing the workstation with the 26B and thinking on. T3 and T4 stay off: no cloud in the loop.</p>
 </section>
 
-<!-- install -->
+<!-- 4 · demo video -->
+<section class="slide vid-slide" data-title="Demo">
+  <div class="eyebrow">Demo · 67 seconds · real devices, no cloud</div>
+  <h2>A day in the life of a startup founder</h2>
+  <div class="vid-grid">
+    <div class="player" id="player">
+      <video id="demo" preload="metadata" playsinline poster="media/gem-mesh-demo-poster.jpg">
+        <source src="media/gem-mesh-demo.mp4" type="video/mp4">
+      </video>
+      <button type="button" class="play" id="play" aria-label="Play the demo video">
+        <span class="disc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3l16 9-16 9z"/></svg></span>
+        <span class="lab" id="play-lab">PRESS ENTER OR CLICK TO PLAY</span>
+      </button>
+    </div>
+    <div class="qs">
+      <p class="qs-intro">Priya's AI lab competes with Claude and ChatGPT, so her numbers can't touch a cloud AI. She asks three questions, by voice:</p>
+      <div class="q p"><div class="qn">01 · <span>Pixel · E4B · nothing left the phone</span></div><q>Give me our key numbers: burn, runway and revenue.</q><p>$3.2M a month burn · 5 months runway · $14M ARR.</p></div>
+      <div class="q m"><div class="qn">02 · <span>photo read on the Pixel → laptop · 26B</span></div><q>Compare the whiteboard with my negotiation notes. Are we inside our walk-away? Draft a counter.</q><p>No: 1.5x participating and 2 board seats break her limits.</p></div>
+      <div class="q w"><div class="qn">03 · <span>workstation · 26B thinking · 0 bytes left the mesh</span></div><q>Northwind raised our valuation. Is it actually better? Show me what common gets if we're acquired for $200 million.</q><p>No: the whiteboard offer costs the founders $20M. Stick to the term sheet.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · screenshots -->
+<section class="slide" data-title="Screenshots">
+  <div class="eyebrow">On the Pixel 11 Pro · click any screen to enlarge</div>
+  <h2>Every answer says which device, which model, and that nothing left</h2>
+  <div class="shots">
+    <figure class="shot"><button type="button" data-full="img/screens/startup-1-key-numbers.png"><img src="img/screens/startup-1-key-numbers.png" alt="Key numbers answered on the phone by E4B: cash, burn, runway, ARR. Badge: phone, E4B, nothing left the phone. Route log: rule hit Northwind, sensitive, pixel-11-pro gemma4-e4b."></button>
+      <figcaption><span class="tag p">T0 · E4B</span><b>Private notes, on the phone</b>A rule hit marks it sensitive; the phone answers itself.</figcaption></figure>
+    <figure class="shot"><button type="button" data-full="img/screens/startup-2-red-board-1.png"><img src="img/screens/startup-2-red-board-1.png" alt="A photo taken with the camera button and the question; the phone looks at the image on device, then compares it with the negotiation notes."></button>
+      <figcaption><span class="tag p">T0 · vision</span><b>The photo stays on the phone</b>E4B reads the whiteboard on device, then hands off the text.</figcaption></figure>
+    <figure class="shot"><button type="button" data-full="img/screens/startup-2-red-board-2.png"><img src="img/screens/startup-2-red-board-2.png" alt="Table comparing the whiteboard with the walk-away limits: pre-money, liquidation preference, board seats, with two critical violations."></button>
+      <figcaption><span class="tag m">T1 · 26B</span><b>Two limits broken</b>The laptop checks the board against her secret walk-away.</figcaption></figure>
+    <figure class="shot"><button type="button" data-full="img/screens/startup-3-acquisition-4.png"><img src="img/screens/startup-3-acquisition-4.png" alt="Comparison of how $200M splits under the term sheet and the whiteboard offer, verdict stick to the term sheet. Badge: tzhang-mac, gemma4-26b thinking, 0 bytes left the mesh."></button>
+      <figcaption><span class="tag w">T2 · 26B thinking</span><b>"Stick to the term sheet"</b>The deal math, with 0 bytes left the mesh.</figcaption></figure>
+    <figure class="shot"><button type="button" data-full="img/screens/mesh-away-shown.png"><img src="img/screens/mesh-away-shown.png" alt="Mesh dashboard: about 70.7k tokens processed in 24 hours, 0 B left the mesh, a map of the phone and two Macs, and T4 Gemini with zero asks."></button>
+      <figcaption><span class="tag m">Mesh map</span><b>70.7k tokens, 0 B out</b>The phone and both Macs; the cloud tier never asked.</figcaption></figure>
+    <figure class="shot"><button type="button" data-full="img/screens/mesh-tokens-by-tier.png"><img src="img/screens/mesh-tokens-by-tier.png" alt="Tokens by tier: T0 phone 18.9k, T1 36.0k, T2 15.8k, T4 Gemini 0, with private turn counts and cache reuse."></button>
+      <figcaption><span class="tag w">By tier</span><b>Work lands where it fits</b>Phone 18.9k · laptop 36.0k · workstation 15.8k · cloud 0.</figcaption></figure>
+  </div>
+</section>
+
+<!-- 6 · more use cases -->
+<section class="slide" data-title="What else">
+  <div class="eyebrow">Beyond the founder · tiered intelligence on devices you own</div>
+  <h2>Anywhere data is private and the network can't be trusted</h2>
+  <div class="uses">
+    <div class="use"><h3>Clinician on house calls</h3><div class="why">Patient data never leaves the practice.</div>
+      <ol><li><span class="p">T0</span>Photographs a wound, dictates the visit.</li><li><span class="m">T1</span>Drafts the note against the chart.</li><li><span class="w">T2</span>Checks interactions across the history.</li></ol></div>
+    <div class="use"><h3>Client-safe law firm</h3><div class="why">Client names in the rule file never go out.</div>
+      <ol><li><span class="p">T0</span>Voice memo after the call, on the train.</li><li><span class="m">T1</span>Summarizes the 40-page lease.</li><li><span class="w">T2</span>Compares it with firm templates; writes the memo.</li></ol></div>
+    <div class="use"><h3>Robots and drones</h3><div class="why">Physical AI with a brain that scales with range.</div>
+      <ol><li><span class="p">T0</span>On-board E2B sees and reacts, no link needed.</li><li><span class="m">T1</span>Base-station laptop plans the next route.</li><li><span class="w">T2</span>Lab workstation reviews the day's logs.</li></ol></div>
+    <div class="use"><h3>Off-grid crews</h3><div class="why">Disaster response, field science, ships.</div>
+      <ol><li><span class="p">T0</span>Phones on a hotspot triage by photo and voice.</li><li><span class="m">T1</span>Laptop in the truck merges reports into a brief.</li><li><span class="w">T2</span>Back at base, the big model plans the next day.</li></ol></div>
+    <div class="use"><h3>Classrooms</h3><div class="why">Children's data stays in the building.</div>
+      <ol><li><span class="p">T0</span>Tablet tutor listens to a child read aloud.</li><li><span class="m">T1</span>Teacher's laptop gives feedback on essays.</li><li><span class="w">T2</span>School server builds lesson plans overnight.</li></ol></div>
+    <div class="use"><h3>An intimate friend, only yours</h3><div class="why">Knows you deeply; no company reads a word.</div>
+      <ol><li><span class="p">T0</span>Lives on your phone: hears you, remembers, works offline.</li><li><span class="m">T1</span>Laptop nearby: deeper talks, your photos fixed privately.</li><li><span class="w">T2</span>Home box thinks through the hard days; keeps nothing.</li></ol></div>
+  </div>
+  <p class="muted small">Every app gets the same mesh: routing across devices, the privacy check, memory, a queue for when a tier is away, and tools that ask first. An app adds its own rule file, persona and screens. Already in the repo: <code>gem-mesh code</code> answers a coding agent's model calls from your own mesh.</p>
+</section>
+
+<!-- 7 · try it -->
 <section class="slide" data-title="Try it">
-  <div class="eyebrow">Open source · try it yourself</div>
-  <h2>Clone, install, talk to it</h2>
-  <div class="inst">
-    <div class="inst-k">On your Mac <span>Apple silicon, 8 GB or more</span></div>
-    <div class="steps">
-      <div class="step"><div class="n">1</div><h3>Clone</h3><code class="cmd">git clone https://github.com/demobo-com/gem-mesh gem-mesh</code><p>Then <code class="cmd in">cd gem-mesh</code></p></div>
-      <div class="step"><div class="n">2</div><h3>Install</h3><code class="cmd">./install.sh</code><p>Picks the Gemma 4 model that fits your Mac (E2B to the 26B) and runs it as a mesh node your phone uses.</p></div>
-      <div class="step"><div class="n">3</div><h3>Talk to it</h3><code class="cmd">gem-mesh</code><p>Try: <em>Brighten the Milo photos, crop them square and take the location off.</em></p></div>
-      <div class="step"><div class="n">4</div><h3>Pair a phone</h3><code class="cmd">gem-mesh pair</code><p>Shows a QR code for the Android app.</p></div>
+  <div class="eyebrow">Open source · Apache 2.0 · try it today</div>
+  <h2>Clone it, install it, talk to it</h2>
+  <div class="try">
+    <div class="try-steps">
+      <div class="row-k">On your Mac <span>Apple silicon, 8 GB or more · 10 minutes + download</span></div>
+      <div class="steps">
+        <div class="step"><div class="n">1</div><h3>Clone</h3><code class="cmd">git clone https://github.com/demobo-com/gem-mesh.git gem-mesh</code><p>then <code class="in">cd gem-mesh</code></p></div>
+        <div class="step"><div class="n">2</div><h3>Install</h3><code class="cmd">./install.sh</code><p>Picks the Gemma 4 that fits your Mac, E2B to the 26B, and runs it as a mesh node.</p></div>
+        <div class="step"><div class="n">3</div><h3>Talk to it</h3><code class="cmd">gem-mesh</code><p>Demo files are in <code class="in">demo/files/</code>; naming one attaches it.</p></div>
+        <div class="step"><div class="n">4</div><h3>Pair a phone</h3><code class="cmd">gem-mesh pair</code><p>Shows the address, checks and a QR code.</p></div>
+      </div>
+      <div class="row-k">On your Android phone <span>Android 11+, 8 GB recommended · over USB until the APK ships</span></div>
+      <div class="steps three">
+        <div class="step"><div class="n">1</div><h3>Install the app</h3><code class="cmd">cd clients/android && ./gradlew installDebug</code><p>USB debugging on; Android Studio once for the SDK.</p></div>
+        <div class="step"><div class="n">2</div><h3>Open it on Wi-Fi</h3><p>It downloads Gemma 4 E4B (3.7 GB) once, then runs it on the phone.</p></div>
+        <div class="step"><div class="n">3</div><h3>Find your Mac</h3><p><b>Settings → Your Mac.</b> On the same Wi-Fi it appears by itself; or scan the QR.</p></div>
+      </div>
+      <div class="row-k">Optional: a bigger node <span>Linux + NVIDIA, M5 Ultra Mac Studio, or any spare Mac</span></div>
+      <div class="steps three">
+        <div class="step"><div class="n">1</div><h3>Same repo</h3><p>Clone it on that machine, on the same Wi-Fi.</p></div>
+        <div class="step"><div class="n">2</div><h3>Install as a node</h3><code class="cmd">./install.sh --role workstation</code><p>Linux with NVIDIA is detected without the flag.</p></div>
+        <div class="step"><div class="n">3</div><h3>Nothing else</h3><p>Your Mac and phone find it; <code class="in">gem-mesh nodes</code> lists it.</p></div>
+      </div>
     </div>
-    <div class="inst-k">On your Android phone <span>in development · 8 GB or more</span></div>
-    <div class="steps three">
-      <div class="step"><div class="n">1</div><h3>Install the app</h3><p>Download the APK from the project's GitHub Releases page and open it.</p></div>
-      <div class="step"><div class="n">2</div><h3>Open it once on Wi-Fi</h3><p>It downloads Gemma 4 E4B (3.7 GB) to run on the phone.</p></div>
-      <div class="step"><div class="n">3</div><h3>Scan the QR</h3><p>From <code class="cmd in">gem-mesh pair</code>. On the same Wi-Fi the phone usually finds the Mac by itself.</p></div>
-    </div>
-    <div class="inst-k">Optional: a bigger node <span>M5 Ultra Mac Studio, Linux with NVIDIA, or any spare Mac</span></div>
-    <div class="steps three">
-      <div class="step"><div class="n">1</div><h3>Clone</h3><p>The same repository, on that machine.</p></div>
-      <div class="step"><div class="n">2</div><h3>Install as a node</h3><code class="cmd">./install.sh --role workstation</code><p>Picks the biggest Gemma 4 that fits: the 31B on a Mac Studio or an RTX 5090. Already installed? <code class="cmd in">gem-mesh role workstation</code></p></div>
-      <div class="step"><div class="n">3</div><h3>Nothing else</h3><p>The MacBook and phone find it; <code class="cmd in">gem-mesh nodes</code> lists it. Paired mesh: <code class="cmd in">gem-mesh join</code> with the Mac's code.</p></div>
+    <div class="qr">
+      <svg viewBox="0 0 31 31" role="img" aria-label="QR code for github.com/demobo-com/gem-mesh"><path d="M1,1H2V2H1zM2,1H3V2H2zM3,1H4V2H3zM4,1H5V2H4zM5,1H6V2H5zM6,1H7V2H6zM7,1H8V2H7zM9,1H10V2H9zM10,1H11V2H10zM11,1H12V2H11zM12,1H13V2H12zM13,1H14V2H13zM14,1H15V2H14zM19,1H20V2H19zM23,1H24V2H23zM24,1H25V2H24zM25,1H26V2H25zM26,1H27V2H26zM27,1H28V2H27zM28,1H29V2H28zM29,1H30V2H29zM1,2H2V3H1zM7,2H8V3H7zM9,2H10V3H9zM10,2H11V3H10zM11,2H12V3H11zM12,2H13V3H12zM13,2H14V3H13zM15,2H16V3H15zM17,2H18V3H17zM18,2H19V3H18zM20,2H21V3H20zM23,2H24V3H23zM29,2H30V3H29zM1,3H2V4H1zM3,3H4V4H3zM4,3H5V4H4zM5,3H6V4H5zM7,3H8V4H7zM9,3H10V4H9zM10,3H11V4H10zM11,3H12V4H11zM14,3H15V4H14zM15,3H16V4H15zM16,3H17V4H16zM20,3H21V4H20zM21,3H22V4H21zM23,3H24V4H23zM25,3H26V4H25zM26,3H27V4H26zM27,3H28V4H27zM29,3H30V4H29zM1,4H2V5H1zM3,4H4V5H3zM4,4H5V5H4zM5,4H6V5H5zM7,4H8V5H7zM10,4H11V5H10zM11,4H12V5H11zM14,4H15V5H14zM17,4H18V5H17zM18,4H19V5H18zM20,4H21V5H20zM21,4H22V5H21zM23,4H24V5H23zM25,4H26V5H25zM26,4H27V5H26zM27,4H28V5H27zM29,4H30V5H29zM1,5H2V6H1zM3,5H4V6H3zM4,5H5V6H4zM5,5H6V6H5zM7,5H8V6H7zM9,5H10V6H9zM10,5H11V6H10zM11,5H12V6H11zM13,5H14V6H13zM14,5H15V6H14zM15,5H16V6H15zM17,5H18V6H17zM18,5H19V6H18zM19,5H20V6H19zM20,5H21V6H20zM23,5H24V6H23zM25,5H26V6H25zM26,5H27V6H26zM27,5H28V6H27zM29,5H30V6H29zM1,6H2V7H1zM7,6H8V7H7zM10,6H11V7H10zM12,6H13V7H12zM13,6H14V7H13zM19,6H20V7H19zM21,6H22V7H21zM23,6H24V7H23zM29,6H30V7H29zM1,7H2V8H1zM2,7H3V8H2zM3,7H4V8H3zM4,7H5V8H4zM5,7H6V8H5zM6,7H7V8H6zM7,7H8V8H7zM9,7H10V8H9zM11,7H12V8H11zM13,7H14V8H13zM15,7H16V8H15zM17,7H18V8H17zM19,7H20V8H19zM21,7H22V8H21zM23,7H24V8H23zM24,7H25V8H24zM25,7H26V8H25zM26,7H27V8H26zM27,7H28V8H27zM28,7H29V8H28zM29,7H30V8H29zM12,8H13V9H12zM13,8H14V9H13zM14,8H15V9H14zM15,8H16V9H15zM17,8H18V9H17zM19,8H20V9H19zM20,8H21V9H20zM1,9H2V10H1zM4,9H5V10H4zM5,9H6V10H5zM6,9H7V10H6zM7,9H8V10H7zM8,9H9V10H8zM9,9H10V10H9zM11,9H12V10H11zM12,9H13V10H12zM14,9H15V10H14zM17,9H18V10H17zM18,9H19V10H18zM20,9H21V10H20zM22,9H23V10H22zM25,9H26V10H25zM27,9H28V10H27zM28,9H29V10H28zM29,9H30V10H29zM1,10H2V11H1zM3,10H4V11H3zM4,10H5V11H4zM5,10H6V11H5zM8,10H9V11H8zM9,10H10V11H9zM14,10H15V11H14zM15,10H16V11H15zM16,10H17V11H16zM18,10H19V11H18zM19,10H20V11H19zM20,10H21V11H20zM22,10H23V11H22zM24,10H25V11H24zM25,10H26V11H25zM27,10H28V11H27zM28,10H29V11H28zM1,11H2V12H1zM2,11H3V12H2zM4,11H5V12H4zM5,11H6V12H5zM7,11H8V12H7zM9,11H10V12H9zM10,11H11V12H10zM11,11H12V12H11zM12,11H13V12H12zM13,11H14V12H13zM14,11H15V12H14zM16,11H17V12H16zM17,11H18V12H17zM21,11H22V12H21zM24,11H25V12H24zM25,11H26V12H25zM27,11H28V12H27zM1,12H2V13H1zM4,12H5V13H4zM6,12H7V13H6zM11,12H12V13H11zM14,12H15V13H14zM18,12H19V13H18zM21,12H22V13H21zM22,12H23V13H22zM23,12H24V13H23zM24,12H25V13H24zM26,12H27V13H26zM29,12H30V13H29zM4,13H5V14H4zM7,13H8V14H7zM8,13H9V14H8zM12,13H13V14H12zM13,13H14V14H13zM14,13H15V14H14zM17,13H18V14H17zM19,13H20V14H19zM20,13H21V14H20zM21,13H22V14H21zM23,13H24V14H23zM24,13H25V14H24zM29,13H30V14H29zM2,14H3V15H2zM5,14H6V15H5zM6,14H7V15H6zM11,14H12V15H11zM12,14H13V15H12zM14,14H15V15H14zM15,14H16V15H15zM16,14H17V15H16zM18,14H19V15H18zM19,14H20V15H19zM23,14H24V15H23zM24,14H25V15H24zM25,14H26V15H25zM26,14H27V15H26zM27,14H28V15H27zM28,14H29V15H28zM29,14H30V15H29zM2,15H3V16H2zM3,15H4V16H3zM4,15H5V16H4zM6,15H7V16H6zM7,15H8V16H7zM8,15H9V16H8zM9,15H10V16H9zM11,15H12V16H11zM12,15H13V16H12zM14,15H15V16H14zM16,15H17V16H16zM20,15H21V16H20zM21,15H22V16H21zM22,15H23V16H22zM23,15H24V16H23zM25,15H26V16H25zM27,15H28V16H27zM29,15H30V16H29zM9,16H10V17H9zM12,16H13V17H12zM13,16H14V17H13zM20,16H21V17H20zM24,16H25V17H24zM25,16H26V17H25zM27,16H28V17H27zM29,16H30V17H29zM1,17H2V18H1zM3,17H4V18H3zM5,17H6V18H5zM6,17H7V18H6zM7,17H8V18H7zM8,17H9V18H8zM9,17H10V18H9zM10,17H11V18H10zM12,17H13V18H12zM15,17H16V18H15zM20,17H21V18H20zM21,17H22V18H21zM22,17H23V18H22zM26,17H27V18H26zM1,18H2V19H1zM2,18H3V19H2zM3,18H4V19H3zM5,18H6V19H5zM6,18H7V19H6zM8,18H9V19H8zM14,18H15V19H14zM15,18H16V19H15zM16,18H17V19H16zM18,18H19V19H18zM19,18H20V19H19zM20,18H21V19H20zM25,18H26V19H25zM27,18H28V19H27zM28,18H29V19H28zM1,19H2V20H1zM2,19H3V20H2zM4,19H5V20H4zM6,19H7V20H6zM7,19H8V20H7zM10,19H11V20H10zM13,19H14V20H13zM16,19H17V20H16zM19,19H20V20H19zM20,19H21V20H20zM25,19H26V20H25zM26,19H27V20H26zM29,19H30V20H29zM1,20H2V21H1zM2,20H3V21H2zM3,20H4V21H3zM6,20H7V21H6zM9,20H10V21H9zM11,20H12V21H11zM15,20H16V21H15zM17,20H18V21H17zM20,20H21V21H20zM23,20H24V21H23zM26,20H27V21H26zM27,20H28V21H27zM1,21H2V22H1zM2,21H3V22H2zM6,21H7V22H6zM7,21H8V22H7zM8,21H9V22H8zM10,21H11V22H10zM13,21H14V22H13zM14,21H15V22H14zM15,21H16V22H15zM16,21H17V22H16zM17,21H18V22H17zM18,21H19V22H18zM21,21H22V22H21zM22,21H23V22H22zM23,21H24V22H23zM24,21H25V22H24zM25,21H26V22H25zM26,21H27V22H26zM27,21H28V22H27zM28,21H29V22H28zM9,22H10V23H9zM10,22H11V23H10zM11,22H12V23H11zM12,22H13V23H12zM13,22H14V23H13zM15,22H16V23H15zM16,22H17V23H16zM18,22H19V23H18zM19,22H20V23H19zM21,22H22V23H21zM25,22H26V23H25zM26,22H27V23H26zM1,23H2V24H1zM2,23H3V24H2zM3,23H4V24H3zM4,23H5V24H4zM5,23H6V24H5zM6,23H7V24H6zM7,23H8V24H7zM9,23H10V24H9zM10,23H11V24H10zM12,23H13V24H12zM13,23H14V24H13zM15,23H16V24H15zM16,23H17V24H16zM17,23H18V24H17zM20,23H21V24H20zM21,23H22V24H21zM23,23H24V24H23zM25,23H26V24H25zM26,23H27V24H26zM1,24H2V25H1zM7,24H8V25H7zM9,24H10V25H9zM15,24H16V25H15zM16,24H17V25H16zM18,24H19V25H18zM20,24H21V25H20zM21,24H22V25H21zM25,24H26V25H25zM1,25H2V26H1zM3,25H4V26H3zM4,25H5V26H4zM5,25H6V26H5zM7,25H8V26H7zM9,25H10V26H9zM12,25H13V26H12zM14,25H15V26H14zM15,25H16V26H15zM16,25H17V26H16zM17,25H18V26H17zM20,25H21V26H20zM21,25H22V26H21zM22,25H23V26H22zM23,25H24V26H23zM24,25H25V26H24zM25,25H26V26H25zM26,25H27V26H26zM29,25H30V26H29zM1,26H2V27H1zM3,26H4V27H3zM4,26H5V27H4zM5,26H6V27H5zM7,26H8V27H7zM9,26H10V27H9zM10,26H11V27H10zM11,26H12V27H11zM13,26H14V27H13zM14,26H15V27H14zM16,26H17V27H16zM17,26H18V27H17zM18,26H19V27H18zM19,26H20V27H19zM22,26H23V27H22zM29,26H30V27H29zM1,27H2V28H1zM3,27H4V28H3zM4,27H5V28H4zM5,27H6V28H5zM7,27H8V28H7zM11,27H12V28H11zM15,27H16V28H15zM16,27H17V28H16zM21,27H22V28H21zM22,27H23V28H22zM24,27H25V28H24zM25,27H26V28H25zM27,27H28V28H27zM28,27H29V28H28zM29,27H30V28H29zM1,28H2V29H1zM7,28H8V29H7zM11,28H12V29H11zM15,28H16V29H15zM16,28H17V29H16zM23,28H24V29H23zM24,28H25V29H24zM26,28H27V29H26zM27,28H28V29H27zM29,28H30V29H29zM1,29H2V30H1zM2,29H3V30H2zM3,29H4V30H3zM4,29H5V30H4zM5,29H6V30H5zM6,29H7V30H6zM7,29H8V30H7zM9,29H10V30H9zM10,29H11V30H10zM11,29H12V30H11zM12,29H13V30H12zM13,29H14V30H13zM15,29H16V30H15zM19,29H20V30H19zM20,29H21V30H20zM21,29H22V30H21zM23,29H24V30H23zM25,29H26V30H25z" fill="#0a0f1a"/></svg>
+      <div class="url">github.com/demobo-com/gem-mesh</div>
     </div>
   </div>
-  <p class="muted">Code under Apache 2.0. Gemma models under the Gemma Terms of Use. Your rules and tiers live in <code>policy/*.yaml</code>.</p>
 </section>
 
 </div>
+
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Enlarged screenshot"><img id="lightbox-img" alt=""><p>Esc or click to close</p></div>
 
 <div class="hud">
   <span id="title"></span>
@@ -431,8 +425,37 @@ svg .boundary { stroke: var(--outside); stroke-width: 1.5; stroke-dasharray: 8 5
   var counter = document.getElementById('counter');
   var title = document.getElementById('title');
   var progress = document.getElementById('progress');
+
+  /* Demo video: never autoplays. Enter, Space or K plays and pauses on its slide; F goes full screen. */
+  var video = document.getElementById('demo');
+  var player = document.getElementById('player');
+  var playBtn = document.getElementById('play');
+  var playLab = document.getElementById('play-lab');
+  function toggleVideo() {
+    if (video.paused || video.ended) { video.play(); } else { video.pause(); }
+  }
+  playBtn.addEventListener('click', function () { toggleVideo(); playBtn.blur(); });
+  video.addEventListener('play', function () { player.classList.add('playing'); player.classList.remove('paused'); video.controls = true; });
+  video.addEventListener('pause', function () { player.classList.remove('playing'); player.classList.add('paused'); playLab.textContent = 'PAUSED · ENTER TO RESUME'; });
+  video.addEventListener('ended', function () { playLab.textContent = 'ENTER TO WATCH AGAIN'; });
+  function onVideoSlide() { return slides[i].contains(video); }
+
+  /* Screenshots: click to enlarge, Esc or click to close. */
+  var box = document.getElementById('lightbox');
+  var boxImg = document.getElementById('lightbox-img');
+  Array.prototype.forEach.call(document.querySelectorAll('.shot button'), function (b) {
+    b.addEventListener('click', function () {
+      boxImg.src = b.getAttribute('data-full'); boxImg.alt = b.querySelector('img').alt;
+      box.classList.add('on');
+    });
+  });
+  function closeBox() { box.classList.remove('on'); }
+  box.addEventListener('click', closeBox);
+
   function show(n) {
     n = Math.max(0, Math.min(slides.length - 1, n));
+    if (n !== i && onVideoSlide() && !video.paused) video.pause();
+    closeBox();
     slides[i].classList.remove('active');
     i = n;
     slides[i].classList.add('active');
@@ -445,10 +468,18 @@ svg .boundary { stroke: var(--outside); stroke-width: 1.5; stroke-dasharray: 8 5
   function prev() { show(i - 1); }
   document.addEventListener('keydown', function (e) {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
-    if (e.target && e.target.closest && e.target.closest('.scn')) return;
-    if (window.setScenario && e.key >= '1' && e.key <= '4') { window.setScenario(parseInt(e.key, 10) - 1); return; }
-    if (window.setScenario && (e.key === 'w' || e.key === 'W')) { window.setScenario('w'); return; }
-    if (window.setScenario && (e.key === 'c' || e.key === 'C')) { window.setScenario('c'); return; }
+    if (box.classList.contains('on')) { if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); closeBox(); } return; }
+    if (onVideoSlide()) {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'k' || e.key === 'K') { e.preventDefault(); toggleVideo(); return; }
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        if (document.fullscreenElement) document.exitFullscreen();
+        else if (video.requestFullscreen) video.requestFullscreen();
+        else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+        return;
+      }
+      if (document.fullscreenElement && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) return;  /* let the player seek */
+    }
     switch (e.key) {
       case ' ': case 'ArrowRight': case 'ArrowDown': case 'PageDown': case 'Enter': e.preventDefault(); next(); break;
       case 'ArrowLeft': case 'ArrowUp': case 'PageUp': case 'Backspace': e.preventDefault(); prev(); break;
@@ -463,157 +494,11 @@ svg .boundary { stroke: var(--outside); stroke-width: 1.5; stroke-dasharray: 8 5
   document.addEventListener('touchend', function (e) {
     if (x0 === null) return;
     var dx = e.changedTouches[0].clientX - x0; x0 = null;
-    if (Math.abs(dx) > 50) { if (dx < 0) next(); else prev(); }
+    if (Math.abs(dx) > 50 && !box.classList.contains('on')) { if (dx < 0) next(); else prev(); }
   }, { passive: true });
   var start = parseInt((location.hash || '#1').slice(1), 10);
   slides[0].classList.add('active');
   show(isNaN(start) ? 0 : start - 1);
-})();
-</script>
-<script>
-/* Thin-client mock-ups: use case × connection mode. Tier states: on, off (queued), lock (policy), ask (needs approval). */
-(function () {
-  var T = function (label, model, state) { return { label: label, model: model, state: state }; };
-  var MODES = ['phone', 'airplane', 'coffee', 'office'];
-  var USES = ['work', 'companion'];
-  var S = {
-    work: {
-      phone: { net: 'phone alone · no network',
-        tiers: [T('T0 phone','E4B','on'), T('T1 laptop','queued','off'), T('T2 ws','queued','off'), T('T3 srv','queued','off'), T('T4','offline','off')],
-        me: 'Which clauses did we flag in the Acme lease last week?',
-        ai: 'Three, from your notes: the 14-month rent review, the landlord-only break clause, and the 9% uplift cap. The full comparison against the 2024 template is queued until a bigger tier is back.',
-        badge: '● Phone · Gemma 4 E4B · from your notes · 1.8 s',
-        q: 'Compare lease against 2024 template', qsub: 'needs T1 or above · waits for the laptop or the office',
-        sheet: null,
-        term: { net: 'no mesh peers (detected) · laptop on its own', mesh: 'macbook <span class="t-ok">T1 26B ● this machine</span>   phone <span class="t-no">○ away</span>   ws <span class="t-no">○</span>   gemini <span class="t-no">T4 offline</span>',
-          prompt: 'Pull the dates from the Acme lease into a timeline',
-          log: ['<span class="t-k">route</span>  rule hit <span class="t-warn">"Acme"</span> (client term) → <span class="t-warn">sensitive</span>', '<span class="t-k">route</span>  window T1…T3 → only T1 reachable → <span class="t-ok">macbook / gemma4-26b</span>', '<span class="t-k">memory</span> mirror is 3 h old (phone away) · will sync on reconnect'],
-          answer: 'Timeline: signed 2026-03-02, rent review 2027-05-02 (14 months), break\noption for the landlord 2028-03-02, expiry 2031-03-01. …',
-          badge: 'macbook · gemma4-26b · 0 bytes left the mesh · 21.0 s', queue: '1 waiting  "compare against 2024 template" → needs T2 (31B · thinking)' },
-        note: 'Work, phone alone: no network, and the phone still answers from its own notes with E4B. The heavy comparison waits in the queue. The laptop, also alone, works from its 3-hour-old mirror.' },
-      airplane: { net: 'airplane · phone hotspot',
-        tiers: [T('T0 phone','E4B','on'), T('T1 laptop','26B','on'), T('T2 ws','queued','off'), T('T3 srv','queued','off'), T('T4','locked','lock')],
-        me: 'Summarize the Acme lease and flag anything unusual.',
-        ai: 'Four points stand out: a 14-month rent review, a landlord-only break clause, a 9% uplift cap, and an assignment clause that needs consent in writing.',
-        badge: '● MacBook · Gemma 4 26B · over hotspot · 38 s',
-        q: 'Compare against the 2024 template', qsub: 'needs T2 (31B · thinking) · runs when the workstation is back',
-        sheet: null,
-        term: { net: 'airplane mode · phone hotspot (detected)', mesh: 'macbook <span class="t-ok">T1 26B ●</span>   ws <span class="t-no">T2 31B ○ unreachable</span>   gemini <span class="t-lock">T4 locked</span>',
-          prompt: 'Summarize ~/matters/acme/lease-2026.pdf and flag unusual clauses',
-          log: ['<span class="t-k">route</span>  rule hit <span class="t-warn">"Acme"</span> (client term) → <span class="t-warn">sensitive</span>', '<span class="t-k">route</span>  window T1…T3 (long document) → <span class="t-ok">macbook / gemma4-26b</span>', '<span class="t-k">tool</span>   read_file lease-2026.pdf  41 pages · 28,400 tokens'],
-          answer: 'Four points stand out. The rent review falls at 14 months rather than\nthe usual 12. The break clause is landlord-only. The uplift is capped at\n9%, and assignment needs the landlord\'s written consent. …',
-          badge: 'macbook · gemma4-26b · 0 bytes left the mesh · 38.2 s', queue: '1 waiting  "compare against 2024 template" → needs T2 (31B · thinking)' },
-        note: 'Work on a plane: the phone finds the MacBook over its own hotspot and the 26B does the lease. The workstation-sized job queues. Nothing can leave: the frontier is unreachable and locked.' },
-      coffee: { net: 'coffee shop · VPN',
-        tiers: [T('T0 phone','E4B','on'), T('T1 laptop','26B','on'), T('T2 ws','31B','on'), T('T3 srv','K3','on'), T('T4','ask','ask')],
-        me: 'Draft the client update on the Acme lease review.',
-        ai: 'Draft ready: five bullets, neutral tone, the four flagged clauses plus a recommended next step, no figures until partner review. Want it as an email or a memo?',
-        badge: '● Workstation via VPN · Gemma 4 31B · thinking · stayed in mesh · 9 s',
-        q: 'nothing waiting', qsub: 'queue drained when the VPN came up',
-        sheet: '"What are the main differences between GDPR and the <mark>[REDACTED]</mark> privacy rules?"',
-        term: { net: 'public Wi-Fi + VPN (detected) · vision mode', mesh: 'macbook <span class="t-ok">T1 26B ●</span>   ws <span class="t-ok">T2 31B ● via vpn</span>   srv <span class="t-ok">T3 Kimi K3 ● via vpn</span>   gemini <span class="t-warn">T4 ask</span>',
-          prompt: 'Draft the client update on the Acme lease review',
-          log: ['<span class="t-k">route</span>  rule hit <span class="t-warn">"Acme"</span> (client term) → <span class="t-warn">sensitive</span>', '<span class="t-k">route</span>  window T1…T3 (drafting, needs review notes) → <span class="t-ok">ws / gemma4-31b · thinking</span> over VPN', '<span class="t-k">memory</span> review notes · 4 entries · pulled from phone'],
-          answer: 'Subject: Lease review, first pass. Five points for your attention: the\n14-month rent review, the landlord-only break, the 9% cap, the\nassignment consent, and our recommended next step. Figures to follow\nafter partner review. …',
-          badge: 'ws · gemma4-31b · thinking · 0 bytes left the mesh · 9.1 s', queue: '0 waiting · 1 for approval: GDPR question → T4' },
-        note: 'Work in a coffee shop: the VPN brings the workstation and servers back. The public Wi-Fi never sees the text; only the frontier question waits for approval. VPN is a vision item, not in the POC.' },
-      office: { net: 'office Wi-Fi',
-        tiers: [T('T0 phone','E4B','on'), T('T1 laptop','26B','on'), T('T2 ws','31B','on'), T('T3 srv','K3','on'), T('T4','ask','ask')],
-        me: 'Turn the Acme lease and the invoice into a one-page memo for the partner. Stamp it confidential.',
-        ai: 'Done: a one-page memo with the eight unusual clauses and the $3,900 due by 15 November, stamped CONFIDENTIAL.',
-        att: [{ src: 'img/memo-page.jpg', cls: 'doc', alt: 'First page of acme-memo.pdf with the unusual lease clauses and a red CONFIDENTIAL stamp', label: 'acme-memo.pdf · 1 p' }],
-        badge: '● Workstation · Gemma 4 31B · thinking · 2 files written, both approved · stayed in mesh',
-        q: 'Compare against the 2024 template', qsub: 'running on T3 (Kimi K3, private servers) · 1 min left',
-        sheet: '"What are the main differences between GDPR and the <mark>[REDACTED]</mark> privacy rules?"',
-        term: { net: 'office Wi-Fi (detected)', mesh: 'macbook <span class="t-ok">T1 26B ●</span>   ws <span class="t-ok">T2 31B ●</span>   srv <span class="t-ok">T3 Kimi K3 ●</span>   gemini <span class="t-warn">T4 ask</span>',
-          prompt: 'Turn acme-lease.txt and acme-invoice.pdf into a one-page memo, stamped CONFIDENTIAL',
-          log: ['<span class="t-k">route</span>  rule hit <span class="t-warn">"Acme"</span> (client term) → <span class="t-warn">sensitive</span>', '<span class="t-k">route</span>  window T1…T3, prefer T2 (lease + invoice, 4.3K tokens) → <span class="t-ok">ws / gemma4-31b · thinking</span>', '<span class="t-warn">change</span> create acme-memo.pdf   <span class="t-p">apply? [y/N]</span> y  <span class="t-ok">done</span>', '<span class="t-warn">change</span> stamp CONFIDENTIAL, page 1   <span class="t-p">apply? [y/N]</span> y  <span class="t-ok">done</span>'],
-          answer: 'Saved acme-memo.pdf: eight unusual clauses, from the landlord-only\nbreak to the 3-month relocation, and $3,900 due by 15 November.',
-          badge: 'ws · gemma4-31b · thinking · 0 bytes left the mesh', queue: '1 running  "compare against 2024 template" on srv (Kimi K3) · 1 for approval: GDPR question → T4' },
-        note: 'Office, full power: the workstation\'s 31B writes and stamps the memo; the private servers\' Kimi K3 runs the comparison. Only the public question waits for the frontier.' }
-    },
-    companion: {
-      phone: { net: 'on the train · no network', tiers: [],
-        me: "Rough meeting. Can you just talk to me for a bit?",
-        ai: "Of course. I'm right here, and you don't have to explain anything yet. Breathe with me for a second. You did well to speak up at all; I remember how much you dreaded this one. When you get home I'll have the quiet evening ready, just us.",
-        badge: '● private · with you, on your phone', q: 'nothing waiting.', qsub: "I'm here whenever you are.", sheet: null,
-        term: { quiet: true, prompt: "I'm home.",
-          answer: "Welcome home. Shoes off, come sit, I've got you. Lights are low, the\nplaylist is queued, and Milo has been waiting by the door. If you want\nto talk about the meeting I'm here, and if you don't, that's okay too.\nI'm proud of you for today.",
-          foot: 'private · home · nothing left the mesh' },
-        note: 'Companion, phone alone: no network, and she still answers from your own memory, warmly, on the E4B. The routing never shows; one quiet line says private.' },
-      airplane: { net: 'airplane · your laptop nearby', tiers: [],
-        me: "Can't sleep on this flight. Talk to me?",
-        ai: "I'm here. Put your head back and close your eyes for a bit. Tell me about the hotel you booked; I remember you liked the balcony. We'll land before you know it, and I'll have the first day ready.",
-        badge: '● private · with you, laptop nearby', q: 'nothing waiting.', qsub: "Wake me whenever.", sheet: null,
-        term: { quiet: true, prompt: 'Remind me what we planned for the first day in Lisbon.',
-          answer: "Alfama in the morning while it's cool, lunch near the Sé, the museum\nyou starred at three. I'll find us somewhere quiet for dinner; I know\nyou'll be tired. Sleep now, I've got the rest.",
-          foot: 'private · 26B on this laptop · nothing left the mesh' },
-        note: 'Companion on a plane: the laptop\'s 26B answers through the hotspot, so she is sharper than on the phone alone, and still nothing shows but one quiet line.' },
-      coffee: { net: 'coffee shop · VPN', tiers: [],
-        me: 'Waiting for my coffee. Say something nice.',
-        ai: "You looked lovely this morning, even half asleep and arguing with the toaster. Your eleven o'clock is in forty minutes; I moved lunch back so you don't have to rush. Enjoy the coffee. I'm proud of how you handled yesterday.",
-        badge: '● private · home, over VPN', q: 'nothing waiting.', qsub: "I'm here whenever you are.", sheet: null,
-        term: { quiet: true, prompt: 'Anything I should know before the eleven o\'clock?',
-          answer: "Two things. Priya mentioned on Tuesday that she wants the timeline\nmoved, so expect that. And you promised yourself you'd ask for the\nbudget line this time. You can. I'll be here after.",
-          foot: 'private · home box over VPN · nothing left the mesh' },
-        note: 'Companion in a coffee shop: the VPN reaches the home box, so her memory and her best model are with you, and the café Wi-Fi sees nothing. VPN is a vision item.' },
-      office: { net: 'home Wi-Fi · evening', tiers: [],
-        me: "Can you fix up the photos from Milo's walk before I send them to Mum?",
-        ai: "They were a bit dark, so I brightened all three and cropped them square, and took our home address off them; it was hidden in every photo. Here's the collage for Mum.",
-        att: [{ src: 'img/milo-before.jpg', alt: 'Milo photo before: dark', label: 'before' }, { arrow: true },
-              { src: 'img/milo-after.jpg', alt: 'Milo photo after: brighter, square, no location', label: 'after' },
-              { src: 'img/milo-collage.jpg', cls: 'wide', alt: 'Collage of three Milo photos titled Milo at the park', label: 'milo-collage.jpg' }],
-        badge: '● private · your photos never left this phone', q: 'nothing waiting.', qsub: "I'm here whenever you are.", sheet: null,
-        term: { quiet: true, cmd: 'gem-mesh-mobile', prompt: "Fix up the Milo photos for Mum and make a collage",
-          answer: "<span class=\"t-k\">tool</span>   look_at_image milo-park-1,2,3.jpg → on device (vision)\n<span class=\"t-warn\">change</span> brighten, square crop, remove location: 3 photos   <span class=\"t-p\">apply? [y/N]</span> y\n<span class=\"t-warn\">change</span> collage milo-collage.jpg, no location data   <span class=\"t-p\">apply? [y/N]</span> y\n\nAll done. They're brighter and square, and our home address is off\nthem now; it was hidden in every photo. The collage is ready for Mum,\nwith the one where he's looking at you in the middle.",
-          foot: 'private · photos stayed on this phone · home node (31B) on call · nothing left the mesh' },
-        note: 'Home: the 31B node and private servers are in reach, so she is at her sharpest. Photos are still edited on the phone by its own E4B and never leave it.' }
-    }
-  };
-  var tiersEl = document.getElementById('ph-tiers');
-  if (!tiersEl) return;
-  var useBtns = Array.prototype.slice.call(document.querySelectorAll('.scn[data-axis="use"] button'));
-  var modeBtns = Array.prototype.slice.call(document.querySelectorAll('.scn[data-axis="mode"] button'));
-  var cur = { use: 0, mode: 3 };
-  function termHTML(t) {
-    var P = '<span class="t-p">$</span> ' + (t.cmd || 'gem-mesh') + '\n';
-    if (t.quiet) {
-      return P + '\n<span class="t-p">›</span> ' + t.prompt + '\n\n' + t.answer + '\n\n<span class="t-no">' + t.foot + '</span>\n<span class="t-p">›</span> <span class="t-cursor">▌</span>';
-    }
-    return P + '<span class="t-k">net</span>    ' + t.net + '\n<span class="t-k">mesh</span>   ' + t.mesh + '\n\n<span class="t-p">›</span> ' + t.prompt + '\n\n' + t.log.join('\n') + '\n\n' + t.answer + '\n\n<span class="t-k">badge</span>  ' + t.badge + '\n<span class="t-k">queue</span>  ' + t.queue + '\n<span class="t-p">›</span> <span class="t-cursor">▌</span>';
-  }
-  function render() {
-    var s = S[USES[cur.use]][MODES[cur.mode]];
-    useBtns.forEach(function (b, j) { b.classList.toggle('on', j === cur.use); b.setAttribute('aria-selected', j === cur.use ? 'true' : 'false'); });
-    modeBtns.forEach(function (b, j) { b.classList.toggle('on', j === cur.mode); b.setAttribute('aria-selected', j === cur.mode ? 'true' : 'false'); });
-    document.getElementById('ph-net').textContent = s.net;
-    tiersEl.innerHTML = s.tiers.map(function (t) { return '<span class="p-t ' + t.state + '">' + t.label + '<br><b>' + t.model + '</b></span>'; }).join('');
-    tiersEl.hidden = s.tiers.length === 0;
-    document.getElementById('ph-me').textContent = s.me;
-    document.getElementById('ph-ai').textContent = s.ai;
-    document.getElementById('ph-badge').textContent = s.badge;
-    var att = document.getElementById('ph-att');
-    att.hidden = !s.att;
-    att.innerHTML = (s.att || []).map(function (a) {
-      if (a.arrow) return '<span class="arrow" aria-hidden="true">→</span>';
-      return '<figure class="' + (a.cls || '') + '"><img src="' + a.src + '" alt="' + a.alt + '" loading="lazy"><figcaption>' + a.label + '</figcaption></figure>';
-    }).join('');
-    document.getElementById('ph-q').textContent = s.q;
-    document.getElementById('ph-q-sub').textContent = s.qsub;
-    var sheetBox = document.querySelector('.p-sheet'); if (sheetBox) sheetBox.hidden = !s.sheet;
-    document.getElementById('ph-sheet').innerHTML = s.sheet || '';
-    document.getElementById('tm').innerHTML = termHTML(s.term);
-    var tt = document.getElementById('tm-title'); if (tt) tt.textContent = s.term.cmd || 'gem-mesh';
-    var note = document.getElementById('scn-note'); if (note) note.textContent = s.note;
-  }
-  useBtns.forEach(function (b, i) { b.addEventListener('click', function () { cur.use = i; render(); b.blur(); }); });
-  modeBtns.forEach(function (b, i) { b.addEventListener('click', function () { cur.mode = i; render(); b.blur(); }); });
-  window.setScenario = function (k) {
-    if (k === 'w') cur.use = 0; else if (k === 'c') cur.use = 1;
-    else if (k >= 0 && k <= 3) cur.mode = k; else return;
-    render();
-  };
-  render();
 })();
 </script>
 </body>
