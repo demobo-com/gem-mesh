@@ -193,8 +193,11 @@ private fun Conversations(state: UiState, onOpen: (String) -> Unit, onNew: () ->
                     (v == SwipeToDismissBoxValue.EndToStart && !state.busy).also { if (it) onForget(s.session, s.title) }
                 })
                 SwipeToDismissBox(swipe, enableDismissFromStartToEnd = false, backgroundContent = {
-                    Box(Modifier.fillMaxSize().padding(horizontal = 12.dp).clip(CircleShape).background(MaterialTheme.colorScheme.error).padding(horizontal = 20.dp),
-                        contentAlignment = Alignment.CenterEnd) { Text("Forget", color = MaterialTheme.colorScheme.onError, style = MaterialTheme.typography.labelLarge) }
+                    // Only while a row is swiped: an unselected drawer item is transparent, so a resting red layer shows through.
+                    if (swipe.dismissDirection == SwipeToDismissBoxValue.EndToStart) {
+                        Box(Modifier.fillMaxSize().padding(horizontal = 12.dp).clip(CircleShape).background(MaterialTheme.colorScheme.error).padding(horizontal = 20.dp),
+                            contentAlignment = Alignment.CenterEnd) { Text("Forget", color = MaterialTheme.colorScheme.onError, style = MaterialTheme.typography.labelLarge) }
+                    }
                 }) {
                 NavigationDrawerItem(
                     label = {
