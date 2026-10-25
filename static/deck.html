@@ -63,7 +63,15 @@ code { font-family: var(--mono); font-size: .9em; color: var(--mesh); }
 .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 1.2vmin; padding: 2vmin 2.2vmin; }
 .stat b { display: block; font-family: var(--display); font-weight: 700; font-size: clamp(1.8rem, 6.5vmin, 4.6rem); line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .stat span { display: block; margin-top: .8vmin; font-size: clamp(.75rem, 1.8vmin, 1.1rem); color: var(--muted); line-height: 1.3; }
+.stat i { display: block; font-style: normal; font-family: var(--mono); font-size: clamp(10px, 1.45vmin, 14px); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 1vmin; }
 .stat.p b { color: var(--phone); } .stat.m b { color: var(--mesh); } .stat.c b { color: #fff; }
+.ww { display: flex; flex-direction: column; gap: 2.2vmin; }
+.ww > div { border-left: .5vmin solid var(--mesh); padding-left: 2vmin; display: flex; flex-direction: column; gap: .8vmin; }
+.ww > div.why { border-left-color: var(--cloud); }
+.ww .k { font-family: var(--mono); font-size: clamp(11px, 1.5vmin, 15px); letter-spacing: .12em; text-transform: uppercase; color: var(--mesh); }
+.ww .why .k { color: var(--cloud); }
+.ww p { font-size: clamp(.95rem, 2.5vmin, 1.65rem); }
+.ww strong { color: var(--fg); }
 .hint { font-family: var(--mono); font-size: clamp(11px, 1.5vmin, 14px); color: var(--muted); }
 
 /* 2 · technology */
@@ -87,6 +95,34 @@ code { font-family: var(--mono); font-size: .9em; color: var(--mesh); }
 .tech.g1 .u { color: #8fb6ff; } .tech.g3 .u { color: #3ddc84; } .tech.g4 .u { color: var(--phone); } .tech.g5 .u { color: #9bd22e; } .tech.g6 .u { color: #f0a6fb; }
 .also { font-size: clamp(.72rem, 1.65vmin, 1.05rem); color: var(--muted); }
 .also b { color: var(--fg); font-weight: 500; }
+
+/* Voice-over: talking points in small text under the slide; hidden until V shows them (the choice is remembered). */
+.vo { margin-top: auto; border-top: 1px dashed var(--line); padding-top: 1vmin; font-size: clamp(10px, 1.45vmin, 13.5px); line-height: 1.4; color: #7f8da5; }
+.vo b { font-family: var(--mono); font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-right: .8em; }
+.vo ol { margin: .3vmin 0 0; padding-left: 1.3em; columns: 2; column-gap: 3vmin; }
+.vo li { break-inside: avoid; }
+.vo li { font-size: inherit; line-height: inherit; }
+body.no-vo .vo { display: none; }
+.slide:has(> .vo) > :first-child { margin-top: auto; }   /* the slide's content stays centred above the notes */
+
+/* 2 · how: one card per role in the analogy */
+.roles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.8vmin; }
+.role { background: var(--panel); border: 1px solid var(--line); border-top: .7vmin solid var(--mesh); border-radius: 1.2vmin; padding: 2.4vmin 2.2vmin; min-width: 0; display: flex; flex-direction: column; gap: 1vmin; }
+.role .r { font-family: var(--display); font-weight: 700; font-size: clamp(1.3rem, 4vmin, 2.9rem); line-height: 1; letter-spacing: -.01em; }
+.role h3 { font-size: clamp(1rem, 2.6vmin, 1.75rem); line-height: 1.1; color: var(--fg); }
+.role .u { font-family: var(--mono); font-size: clamp(.62rem, 1.4vmin, .9rem); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.role ul { margin: .6vmin 0 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: .6vmin; }
+.role li { font-size: clamp(.74rem, 1.8vmin, 1.15rem); line-height: 1.35; color: #c4cee0; }
+.role.g1 { border-top-color: #4f8df7; } .role.g1 .r { color: #8fb6ff; }
+.role.g2 { border-top-color: #7aa7ff; } .role.g2 .r { color: #a9c1ff; }
+.role.g4 { border-top-color: var(--phone); } .role.g4 .r { color: var(--phone); }
+.role.g6 { border-top-color: #e879f9; } .role.g6 .r { color: #f0a6fb; }
+
+.glue { display: flex; align-items: baseline; flex-wrap: wrap; gap: .6vmin 1.6vmin; border: 1px solid #2c4f8a; border-radius: 1.2vmin; padding: 1.8vmin 2.4vmin;
+  background: linear-gradient(90deg, rgba(45, 212, 191, .12), rgba(111, 155, 255, .12)); }
+.glue b { font-family: var(--display); font-weight: 700; font-size: clamp(1.3rem, 4vmin, 2.9rem); line-height: 1; }
+.glue span { font-family: var(--display); font-weight: 600; font-size: clamp(1rem, 3vmin, 2.1rem); }
+.glue i { font-style: normal; font-family: var(--mono); font-size: clamp(.62rem, 1.45vmin, .92rem); color: var(--muted); margin-left: auto; }
 
 /* 3 · models */
 .tiers5 { display: grid; grid-template-columns: 1fr 1fr 1fr .78fr .78fr; gap: 1.6vmin; align-items: end; }
@@ -192,19 +228,20 @@ code { font-family: var(--mono); font-size: .9em; color: var(--mesh); }
 @media (max-width: 820px) {
   .slide { overflow-y: auto; justify-content: flex-start; }
   .pitch, .try { grid-template-columns: 1fr; }
-  .techs, .uses, .steps, .steps.three { grid-template-columns: 1fr 1fr; }
+  .techs, .roles, .uses, .steps, .steps.three { grid-template-columns: 1fr 1fr; }
   .vid-grid { grid-template-columns: 1fr; } .flow { flex-wrap: wrap; gap: 1vmin; } .flow i { display: none; }
   .tiers5 { grid-template-columns: 1fr; } .tier { min-height: 0 !important; }
   .shots, .shots.four, .obs { grid-template-columns: repeat(2, 1fr); max-width: none; }
   .obs .cli { grid-column: 1 / -1; }
+  .vo ol { columns: 1; }
 }
 </style>
 </head>
-<body>
+<body class="no-vo">
 <div class="progress" id="progress"></div>
 <div class="deck" id="deck">
 
-<!-- 1 · elevator pitch -->
+<!-- 1 · what and why -->
 <section class="slide" data-title="Gem Mesh">
   <div class="eyebrow">The Google Gemma Hardware Hackathon · AGI House · Gemma 4 on LiteRT-LM</div>
   <div class="pitch">
@@ -212,39 +249,53 @@ code { font-family: var(--mono); font-size: .9em; color: var(--mesh); }
       <h1><span class="grad">Gem Mesh</span></h1>
       <div class="tagline">Your phone, laptop and workstation, working as one private AI.</div>
     </div>
-    <div class="pitch-body">
-      <p class="muted">Today you choose between a cloud assistant that sees everything and one local model too small for real work.</p>
-      <p><strong>Gem Mesh turns the devices you already own into one assistant.</strong> Switch them on and they find each other on Wi-Fi or a phone hotspot: no accounts, no setup. The phone hears, sees and checks every request, then hands it to the smallest Gemma that can do the job: <strong>E4B</strong> on the Pixel, <strong>26B</strong> on the laptop, <strong>31B</strong> on the workstation.</p>
-      <p class="muted"><strong>Data sovereignty by default:</strong> your data stays on hardware you own, under rules you set. Open source, built on LiteRT-LM, no cloud anywhere in the loop.</p>
+    <div class="ww">
+      <div class="why">
+        <div class="k">Why</div>
+        <p>We love local models, but they are <strong>hard to set up</strong>, or <strong>too weak to use</strong>. Gem Mesh fixes this.</p>
+      </div>
+      <div class="what">
+        <div class="k">What</div>
+        <p><strong>Auto-discovery makes setup foolproof:</strong> your phone, laptop and workstation find each other and join by themselves.</p>
+        <p><strong>Smart routing finds the best tier for the job:</strong> E4B on the phone, 26B on the laptop, 31B on the workstation.</p>
+      </div>
     </div>
   </div>
   <div class="stats">
-    <div class="stat p"><b>0 setup</b><span>devices discover each other on the network (mDNS) and join the mesh by themselves</span></div>
-    <div class="stat m"><b>4</b><span>Gemma 4 sizes, each on the device it fits: E4B · 12B · 26B · 31B</span></div>
-    <div class="stat c"><b>0 bytes</b><span>left the mesh. Your data, your devices, your rules, even offline</span></div>
+    <div class="stat c"><i>Data sovereignty</i><b>0 bytes</b><span>left the mesh. Your data, your devices, your rules, even offline</span></div>
+    <div class="stat p"><i>Local AI auto-discovery</i><b>0 setup</b><span>devices find each other on the network and join the mesh by themselves</span></div>
+    <div class="stat m"><i>Smart routing</i><b>3 tiers</b><span>E4B on the phone · 26B on the laptop · 31B on the workstation</span></div>
   </div>
-  <p class="hint">→ or Space to advance · ← to go back</p>
+  <aside class="vo"><b>Voice-over</b><ol>
+    <li>We love local models, but they're hard to set up, or too weak to be useful.</li>
+    <li>Gem Mesh fixes both, with the devices you already own. Zero bytes leave the mesh.</li>
+    <li>Auto-discovery makes setup foolproof: switch a device on and it joins.</li>
+    <li>Smart routing sends each job to the best tier for it, from the phone to the workstation.</li>
+  </ol></aside>
 </section>
 
-<!-- 2 · technology -->
-<section class="slide" data-title="Technology">
-  <div class="eyebrow">Technology · our sponsors' stack, end to end</div>
-  <h2>Gemma on LiteRT-LM, from the Pixel to the GPU</h2>
-  <div class="flow" aria-label="How a request flows through the stack">
-    <div class="fl p"><b>Voice · photo · file</b><span>camera, mic and files on the phone</span></div><i></i>
-    <div class="fl p"><b>Gemma 4 E4B</b><span>LiteRT-LM on the Pixel 11 Pro GPU</span></div><i></i>
-    <div class="fl p"><b>Router + privacy check</b><span>on the phone, before anything moves</span></div><i></i>
-    <div class="fl m"><b>Auto-discovery</b><span>mDNS on Wi-Fi or hotspot</span></div><i></i>
-    <div class="fl w"><b>Gemma 4 12B–31B</b><span>LiteRT-LM on your Macs</span></div><i></i>
-    <div class="fl c"><b>Answer + badge</b><span>which device, which model, 0 bytes out</span></div>
+<!-- 2 · how -->
+<section class="slide" data-title="How">
+  <div class="eyebrow">How · our sponsors' stack, end to end</div>
+  <h2>A brain, one engine, ears and eyes, and hands</h2>
+  <div class="roles">
+    <div class="role g1"><div class="r">The brain</div><h3>Gemma 4 family</h3><div class="u">Google DeepMind</div>
+      <ul><li>E4B on the phone, 26B on the laptop, 31B on the workstation</li><li>EmbeddingGemma indexes your memory</li></ul></div>
+    <div class="role g2"><div class="r">One engine</div><h3>LiteRT-LM</h3><div class="u">Google AI Edge</div>
+      <ul><li>The same runtime on Android, macOS and Linux</li><li>GPU on the Pixel and on Apple silicon</li></ul></div>
+    <div class="role g4"><div class="r">Ears and eyes</div><h3>Pixel 11 Pro</h3><div class="u">Google Pixel</div>
+      <ul><li>Mic and camera feed Gemma E4B on its GPU</li><li>Checks privacy before anything moves</li></ul></div>
+    <div class="role g6"><div class="r">The hands</div><h3>Mobile-use MCP</h3><div class="u">AGI, Inc.</div>
+      <ul><li>A phone agent that taps and types in apps for you</li><li>You approve the exact task first; Keep local is the default</li></ul></div>
   </div>
-  <div class="techs">
-    <div class="tech g1"><div class="u">Google DeepMind</div><h3>Gemma 4 on every tier</h3><ul><li>E4B on the phone: it hears and sees</li><li>12B and 26B MoE on laptops; 26B thinking and 31B on workstations</li><li>EmbeddingGemma 2 (270M) indexes your memory</li></ul></div>
-    <div class="tech g2"><div class="u">Google AI Edge</div><h3>LiteRT-LM, one engine</h3><ul><li>Android SDK on the phone, Python engine on Macs and Linux</li><li>GPU on the Pixel and on Apple silicon</li><li><code>.litertlm</code> builds from litert-community; session KV reuse, tools, vision, audio</li></ul></div>
-    <div class="tech g4"><div class="u">Google Pixel</div><h3>Pixel 11 Pro is T0</h3><ul><li>Gemma 4 E4B on its GPU</li><li>Holds your memory and runs the privacy check</li><li>Answers alone in Airplane Mode</li></ul></div>
-    <div class="tech g6"><div class="u">AGI, Inc.</div><h3>Mobile-use MCP</h3><ul><li>"Use the phone" hands a task to AGI's MCP phone agent, which taps and types in apps</li><li>Never chosen by the router: you see the exact task, and Keep local is the default</li><li>Private tasks are flagged; a live card shows each step, with Stop</li></ul></div>
-  </div>
-  <p class="also"><b>Open-source glue:</b> zeroconf mDNS · FastAPI nodes with an OpenAI-compatible API · a per-mesh certificate authority for HTTPS pairing · Pillow, pypdf, fpdf2 for photo and PDF actions · SwiftUI iPhone app on the same engine.</p>
+  <div class="glue"><b class="grad">Gem Mesh</b><span>connects them together, wirelessly</span><i>Wi-Fi or hotspot · mDNS auto-discovery · HTTPS pairing</i></div>
+  <aside class="vo"><b>Voice-over</b><ol>
+    <li>The brain: the Gemma 4 family, from E4B on the phone to 31B on the workstation.</li>
+    <li>One engine: LiteRT-LM runs every model on every device.</li>
+    <li>The ears and eyes: the Pixel 11 Pro hears, sees and checks every request first.</li>
+    <li>The hands: AGI, Inc.'s mobile-use MCP acts inside phone apps, asking you first.</li>
+    <li>And Gem Mesh connects them all together, wirelessly.</li>
+  </ol></aside>
 </section>
 
 <!-- 3 · models -->
@@ -487,8 +538,19 @@ code { font-family: var(--mono); font-size: .9em; color: var(--mesh); }
   }
   function next() { show(i + 1); }
   function prev() { show(i - 1); }
+  /* Voice-over notes: hidden by default; V shows or hides them (remembered), ?vo=1 starts with them shown. */
+  var voOff = true;
+  try { voOff = localStorage.getItem('deck-vo') !== 'on'; } catch (e) {}
+  if (/[?&]vo=1/.test(location.search)) voOff = false;
+  document.body.classList.toggle('no-vo', voOff);
+  function toggleVo() {
+    voOff = !voOff;
+    document.body.classList.toggle('no-vo', voOff);
+    try { localStorage.setItem('deck-vo', voOff ? 'off' : 'on'); } catch (e) {}
+  }
   document.addEventListener('keydown', function (e) {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if ((e.key === 'v' || e.key === 'V') && !box.classList.contains('on')) { e.preventDefault(); toggleVo(); return; }
     if (box.classList.contains('on')) { if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); closeBox(); } return; }
     if (onVideoSlide()) {
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'k' || e.key === 'K') { e.preventDefault(); toggleVideo(); return; }
