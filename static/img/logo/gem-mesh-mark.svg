@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Gem Mesh">
+  <!-- Gem Mesh mark: eight devices on a ring, linked to their neighbours and across two squares,
+       around a solid star that is the model at the centre. -->
+  <g fill="none" stroke="#000" stroke-linejoin="round">
+    <polygon stroke-width="1.6" points="100,30 149.5,50.5 170,100 149.5,149.5 100,170 50.5,149.5 30,100 50.5,50.5"/>
+    <polygon stroke-width="1.1" points="100,30 170,100 100,170 30,100"/>
+    <polygon stroke-width="1.1" points="149.5,50.5 149.5,149.5 50.5,149.5 50.5,50.5"/>
+  </g>
+  <path fill="#000" d="M100 62 C103.5 91 109 96.5 138 100 C109 103.5 103.5 109 100 138 C96.5 109 91 103.5 62 100 C91 96.5 96.5 91 100 62 Z"/>
+  <g fill="#000" stroke="#fff" stroke-width="2.4">
+    <circle cx="100" cy="30" r="6"/><circle cx="149.5" cy="50.5" r="6"/><circle cx="170" cy="100" r="6"/>
+    <circle cx="149.5" cy="149.5" r="6"/><circle cx="100" cy="170" r="6"/><circle cx="50.5" cy="149.5" r="6"/>
+    <circle cx="30" cy="100" r="6"/><circle cx="50.5" cy="50.5" r="6"/>
+  </g>
+</svg>
