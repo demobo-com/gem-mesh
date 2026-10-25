@@ -14,6 +14,7 @@ import com.demobo.mesh.local.LocalModel
 import com.demobo.mesh.local.ModelDownloader
 import com.demobo.mesh.memory.Event
 import com.demobo.mesh.memory.MemoryServer
+import com.demobo.mesh.memory.MemoryService
 import com.demobo.mesh.memory.MemoryStore
 import com.demobo.mesh.memory.SessionSummary
 import com.demobo.mesh.net.ChatMessage
@@ -279,6 +280,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     override fun onCleared() {
         discovery.stop()
         server?.end()
+        MemoryService.stop(getApplication())
     }
 
     // ---- memory authority ----------------------------------------------------------------------
@@ -289,6 +291,8 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         discovery.self = s.instance
         val ok = withContext(Dispatchers.IO) { s.begin(_state.value.mesh) }
         server = if (ok) s else null
+        // Without a foreground service Android freezes the app in the background and the Mac's mirror times out.
+        if (ok) MemoryService.start(getApplication(), "Your Mac can sync on :${MemoryServer.PORT} while Gem Mesh is in the background")
         _state.update { it.copy(memoryNote = if (ok) "serving on :${MemoryServer.PORT} as ${s.instance}" else "port ${MemoryServer.PORT} is in use; the laptop cannot sync") }
     }
 
