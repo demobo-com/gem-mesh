@@ -8,6 +8,9 @@
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <!-- A queued task notifies when it finishes. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- The memory server on :9401 keeps answering the Mac's mirror while the app is in the background. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <!-- Photos added to the workspace keep their GPS location, so the app can show it and remove it before sharing. -->
     <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
     <!-- Scanning the pairing QR code, and the composer's camera button (the photo goes into the workspace, not off the phone). -->
@@ -42,6 +45,16 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
+
+        <!-- Keeps the memory server from being frozen in the background; it serves only the user's own devices on the LAN. -->
+        <service
+            android:name=".memory.MemoryService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Local memory server that the user's own laptop syncs with over the LAN" />
+        </service>
 
         <!-- Hands the camera app a file in the workspace to write the photo into. -->
         <provider
