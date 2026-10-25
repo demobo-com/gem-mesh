@@ -101,6 +101,7 @@ code { font-family: var(--mono); font-size: .9em; color: var(--mesh); }
 .vo b { font-family: var(--mono); font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-right: .8em; }
 .vo ol { margin: .3vmin 0 0; padding-left: 1.3em; columns: 2; column-gap: 3vmin; }
 .vo li { break-inside: avoid; }
+.vo strong { color: var(--cloud); font-weight: 700; letter-spacing: .04em; }
 .vo li { font-size: inherit; line-height: inherit; }
 body.no-vo .vo { display: none; }
 body:not(.no-vo) .slide:has(> .vo) > :first-child { margin-top: auto; }   /* with the notes shown, the content stays centred above them */
@@ -267,10 +268,11 @@ body:not(.no-vo) .slide:has(> .vo) > :first-child { margin-top: auto; }   /* wit
     <div class="stat m"><i>Smart routing</i><b>3 tiers</b><span>E4B on the phone · 26B on the laptop · 31B on the workstation</span></div>
   </div>
   <aside class="vo"><b>Voice-over</b><ol>
-    <li>We love local models, but they're hard to set up, or too weak to be useful.</li>
-    <li>Gem Mesh fixes both, with the devices you already own. Zero bytes leave the mesh.</li>
-    <li>Auto-discovery makes setup foolproof: switch a device on and it joins.</li>
-    <li>Smart routing sends each job to the best tier for it, from the phone to the workstation.</li>
+    <li>Your term sheet, your health notes, your photos: your data should never have to leave your hands.</li>
+    <li>That's why we love local models: private, offline, on hardware you own.</li>
+    <li><strong>BUT.</strong> They're a pain to set up, and the one model that fits on your phone is too weak for real work.</li>
+    <li>Gem Mesh fixes both. Auto-discovery: switch a device on and it joins, zero setup.</li>
+    <li>Smart routing: each job goes to the best tier for it, phone to workstation. And zero bytes leave the mesh.</li>
   </ol></aside>
 </section>
 
