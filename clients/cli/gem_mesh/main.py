@@ -19,7 +19,7 @@ def print_header(s: ClientSession) -> None:
 
 
 COMMANDS = ["/help", "/tier", "/nodes", "/reset", "/remember", "/recall", "/facts", "/forget", "/index", "/memory", "/sync",
-            "/file", "/hide", "/unhide", "/network", "/queue", "/think", "/frontier"]
+            "/file", "/hide", "/unhide", "/network", "/queue", "/think", "/frontier", "/phone"]
 
 
 def enable_line_editing(name: str) -> None:
@@ -83,6 +83,8 @@ def run_chat(s: ClientSession, show_log: bool = True) -> int:
             memory_command(s, prompt); continue
         if prompt.startswith("/frontier"):
             frontier(s, prompt[9:].strip()); continue
+        if prompt.startswith("/phone"):
+            phone(s, prompt[6:].strip()); continue
         if prompt.startswith("/think"):
             arg = prompt[6:].strip().lower()
             s.think_override = True if arg == "on" else False if arg == "off" else None
@@ -137,7 +139,7 @@ def run_chat(s: ClientSession, show_log: bool = True) -> int:
                 print(f"{DIM}usage: /tier T0|T1|T2|T3|auto   (now: {s.prefer_tier or 'auto'}){RESET}")
             continue
         if prompt in ("/help", "/?"):
-            print(f"{DIM}/tier T0|T1|T2|T3|auto   prefer a tier from now on\n/nodes                    show reachable nodes\n/reset                    clear the conversation\n/remember <fact>          save a fact to memory\n/recall <query>           search memory\n/facts                    what memory holds about you, numbered\n/forget <n>               forget fact n, on every device\n/index <file>             add a document to memory\n/memory                   memory status\n/sync                     sync memory with the phone now\n/file <path> <question>   ask about a file (sent with the question)\n                          files in demo/files are attached just by naming them\n/hide <device>            simulate a node going away; /unhide restores\n/network office|airplane|offline|auto   force the network mode\n/queue [clear]            tasks waiting for a bigger machine\n/think on|off|auto        reasoning before answering (default: on for T2/T3)\n/frontier <question>      ask Gemini, public conversations only, after you approve\nCtrl-D                    quit{RESET}"); continue
+            print(f"{DIM}/tier T0|T1|T2|T3|auto   prefer a tier from now on\n/nodes                    show reachable nodes\n/reset                    clear the conversation\n/remember <fact>          save a fact to memory\n/recall <query>           search memory\n/facts                    what memory holds about you, numbered\n/forget <n>               forget fact n, on every device\n/index <file>             add a document to memory\n/memory                   memory status\n/sync                     sync memory with the phone now\n/file <path> <question>   ask about a file (sent with the question)\n                          files in demo/files are attached just by naming them\n/hide <device>            simulate a node going away; /unhide restores\n/network office|airplane|offline|auto   force the network mode\n/queue [clear]            tasks waiting for a bigger machine\n/think on|off|auto        reasoning before answering (default: on for T2/T3)\n/frontier <question>      ask Gemini, public conversations only, after you approve\n/phone <task>             AGI's agent does it on your phone (it sees the screen), after you approve\nCtrl-D                    quit{RESET}"); continue
         if not prompt.startswith("/"):
             prompt, attached = attach_mentions(prompt)
             if attached:
@@ -246,6 +248,48 @@ def frontier(s: ClientSession, question: str) -> None:
         print(f"{AMBER}frontier  call failed: {ex}{RESET}"); return
     print(f"\n{text}\n\n{DIM}badge  frontier · {model} · {len(question.encode())} bytes left the mesh (approved) · {_t.time()-t0:.1f} s{RESET}")
     s.transcript += [{"role": "user", "content": question}, {"role": "assistant", "content": text}]
+
+
+def phone(s: ClientSession, task: str) -> None:
+    """Hand one task to AGI's phone agent after showing exactly what leaves (the task, then the phone's screen) and asking."""
+    import os
+    import time as _t
+    from meshcore.router import classify_rules
+    from .phone import PhoneAgent, PhoneAgentError
+    if not task:
+        print(f"{DIM}usage: /phone <task>   e.g. /phone open Settings and tell me the battery level{RESET}"); return
+    # Only the task leaves as text, so only the task is checked; the conversation stays out of it. A private task is
+    # not refused here (operating the phone often needs names and addresses): the user sees why and decides.
+    label, hits = classify_rules(task, s.policy)
+    why = "; ".join(hits[:2])
+    if label == "public" and s.policy.classifier:
+        label, why = s.classify(task)
+    print(f"{AMBER}phone     this exact task would go to AGI, whose agent then taps and types on your phone:{RESET}\n  {task}")
+    if label != "public":
+        print(f"{AMBER}          checked as {label} ({why[:100]}): it leaves your devices anyway if you say yes{RESET}")
+    print(f"{DIM}          a screenshot of every step goes to AGI too, with anything on the screen · about $0.01 a step, at most 200{RESET}")
+    try:
+        yes = input("  let it? [y/N] ").strip().lower() in ("y", "yes")
+    except EOFError:
+        yes = False
+    if not yes:
+        print(f"{DIM}phone     kept local, nothing sent{RESET}"); return
+    key = os.environ.get("AGI_API_KEY")
+    if not key:
+        print(f"{AMBER}phone     no AGI_API_KEY set; nothing sent. Add the key from platform.agi.tech to use this.{RESET}"); return
+    t0 = _t.time()
+    print(f"{DIM}phone     working · Ctrl-C stops it{RESET}", flush=True)
+    try:
+        r = PhoneAgent(key).run(task, on_steps=lambda n: print(f"\r{DIM}phone     step {n}{RESET}", end="", flush=True))
+    except Exception as ex:
+        print(f"\n{AMBER}phone     failed: {ex if isinstance(ex, PhoneAgentError) else f'{type(ex).__name__}: {ex}'}{RESET}"); return
+    # needs_user_control also carries the agent's report when it ends on a question.
+    ok = r["terminal"] in ("ok", "needs_user_control", "stopped_by_user", "cancelled")
+    text = r["summary"] or ("Done." if r["terminal"] == "ok" else r["terminal"])
+    print(f"\n\n{text if ok else AMBER + 'phone     ' + text + RESET}\n\n{DIM}badge  phone agent · {r['device']} · {r['steps']} steps · {r['terminal']} · "
+          f"the task and {r['steps']} screenshots went to AGI (approved) · {_t.time()-t0:.1f} s{RESET}")
+    if ok:
+        s.transcript += [{"role": "user", "content": task}, {"role": "assistant", "content": text}]
 
 
 def queue_notice(tid, node, ans) -> None:
