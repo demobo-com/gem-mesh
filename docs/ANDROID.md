@@ -16,7 +16,7 @@ The app can live in its own repository (`gem-mesh-android`). Bring this repo in 
 
 1. `README.md`: what Gem Mesh is, how to install it on a Mac.
 2. `docs/PROTOCOL.md`: discovery, node API, routing, memory sync, tools. This is your contract with the Mac.
-3. The deck (`static/deck.html`, slide "Thin client screens"): the phone screens we promised, per scenario.
+3. The deck (`static/old_deck.html`, slide "Thin client screens"): the phone screens we promised, per scenario.
 4. `clients/cli/gem_mesh/session.py`: the reference client. The phone stand-in is this class with `role=mobile-mock`.
 
 ## 2. See the reference behaviour on a Mac

@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gem Mesh · Google Gemma Hardware Hackathon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one 16:9 stage per slide, dark projection theme, type scales with the viewport.
+   Tier colours match the Android app: teal = phone, blue = mesh, amber = cloud. */
+:root {
+  --bg: #0a0f1a;
+  --bg2: #101828;
+  --panel: #151f33;
+  --fg: #eef2f8;
+  --muted: #9aa8bf;
+  --line: #27344d;
+  --phone: #2dd4bf;
+  --phone-deep: #0f5f57;
+  --mesh: #6f9bff;
+  --mesh-deep: #2f5fd6;
+  --ws: #3b6fe0;
+  --cloud: #f5b84a;
+  --display: "IBM Plex Sans Condensed", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); overflow: hidden; }
+.deck { position: fixed; inset: 0; }
+.slide {
+  position: absolute; inset: 0; display: none;
+  padding-block: calc(4.5vmin + env(safe-area-inset-top, 0px)) calc(7vmin + env(safe-area-inset-bottom, 0px));
+  padding-left: max(6vmin, env(safe-area-inset-left, 0px));
+  padding-right: max(6vmin, env(safe-area-inset-right, 0px));
+  background: radial-gradient(120vmin 80vmin at 85% 0%, rgba(47, 95, 214, .14), transparent 60%), var(--bg);
+}
+.slide.active { display: flex; flex-direction: column; justify-content: center; gap: 2.2vmin; }
+@media (prefers-reduced-motion: no-preference) {
+  .slide.active { animation: in .35s ease-out; }
+  @keyframes in { from { opacity: 0; transform: translateY(1vmin); } to { opacity: 1; transform: none; } }
+}
+.eyebrow { font-family: var(--mono); font-size: clamp(11px, 1.6vmin, 16px); letter-spacing: .12em; text-transform: uppercase; color: var(--mesh); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(2.6rem, 12vmin, 9rem); line-height: .95; margin: 0; letter-spacing: -.02em; }
+h2 { font-family: var(--display); font-weight: 600; font-size: clamp(1.5rem, 5.2vmin, 3.8rem); line-height: 1.05; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+h3 { font-family: var(--display); font-weight: 600; margin: 0; }
+p, li { font-size: clamp(.95rem, 2.4vmin, 1.6rem); line-height: 1.4; margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: clamp(.8rem, 1.8vmin, 1.15rem); }
+code { font-family: var(--mono); font-size: .9em; color: var(--mesh); }
+.grad { background: linear-gradient(90deg, var(--phone), var(--mesh) 55%, #a9c1ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* 1 · pitch */
+.pitch { display: grid; grid-template-columns: 1.15fr 1fr; gap: 5vmin; align-items: center; }
+.tagline { font-family: var(--display); font-weight: 600; font-size: clamp(1.3rem, 4.4vmin, 3.2rem); line-height: 1.1; margin-top: 2vmin; text-wrap: balance; }
+.pitch-body { display: flex; flex-direction: column; gap: 2vmin; }
+.pitch-body p { font-size: clamp(.95rem, 2.5vmin, 1.65rem); }
+.pitch-body strong { color: var(--fg); }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2vmin; margin-top: 1vmin; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 1.2vmin; padding: 2vmin 2.2vmin; }
+.stat b { display: block; font-family: var(--display); font-weight: 700; font-size: clamp(1.8rem, 6.5vmin, 4.6rem); line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.stat span { display: block; margin-top: .8vmin; font-size: clamp(.75rem, 1.8vmin, 1.1rem); color: var(--muted); line-height: 1.3; }
+.stat.p b { color: var(--phone); } .stat.m b { color: var(--mesh); } .stat.c b { color: #fff; }
+.hint { font-family: var(--mono); font-size: clamp(11px, 1.5vmin, 14px); color: var(--muted); }
+
+/* 2 · technology */
+.flow { display: flex; align-items: stretch; gap: 0; }
+.flow i { flex: 0 0 2.4vmin; align-self: center; height: 2px; background: var(--mesh); position: relative; }
+.flow i::after { content: ""; position: absolute; right: -1px; top: -5px; border: 6px solid transparent; border-left: 8px solid var(--mesh); border-right: 0; }
+.fl { flex: 1 1 0; min-width: 0; border-radius: 1vmin; padding: 1.2vmin 1.4vmin; border: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; gap: .4vmin; }
+.fl b { font-family: var(--display); font-weight: 600; font-size: clamp(.85rem, 2.1vmin, 1.35rem); line-height: 1.1; }
+.fl span { font-size: clamp(.65rem, 1.5vmin, .95rem); color: var(--muted); line-height: 1.3; }
+.fl.p { border-color: var(--phone-deep); background: linear-gradient(180deg, rgba(45, 212, 191, .14), var(--panel)); } .fl.p b { color: var(--phone); }
+.fl.m { border-color: #2c4f8a; } .fl.m b { color: var(--mesh); }
+.fl.w { border-color: #3456a8; background: linear-gradient(180deg, rgba(59, 111, 224, .2), var(--panel)); } .fl.w b { color: #a9c1ff; }
+.fl.c b { color: #fff; }
+.techs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.6vmin; }
+.tech { background: var(--panel); border: 1px solid var(--line); border-top: .55vmin solid var(--mesh); border-radius: 1vmin; padding: 1.6vmin 2vmin; min-width: 0; display: flex; flex-direction: column; gap: .7vmin; }
+.tech .u { font-family: var(--mono); font-size: clamp(.62rem, 1.4vmin, .9rem); letter-spacing: .08em; text-transform: uppercase; color: var(--mesh); }
+.tech h3 { font-size: clamp(1rem, 2.6vmin, 1.75rem); line-height: 1.1; }
+.tech ul { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: .4vmin; }
+.tech li { font-size: clamp(.74rem, 1.75vmin, 1.12rem); line-height: 1.35; color: #c4cee0; }
+.tech.g1 { border-top-color: #4f8df7; } .tech.g2 { border-top-color: #7aa7ff; } .tech.g3 { border-top-color: #3ddc84; } .tech.g4 { border-top-color: var(--phone); } .tech.g5 { border-top-color: #76b900; } .tech.g6 { border-top-color: #e879f9; }
+.tech.g1 .u { color: #8fb6ff; } .tech.g3 .u { color: #3ddc84; } .tech.g4 .u { color: var(--phone); } .tech.g5 .u { color: #9bd22e; } .tech.g6 .u { color: #f0a6fb; }
+.also { font-size: clamp(.72rem, 1.65vmin, 1.05rem); color: var(--muted); }
+.also b { color: var(--fg); font-weight: 500; }
+
+/* 3 · models */
+.tiers5 { display: grid; grid-template-columns: 1fr 1fr 1fr .78fr .78fr; gap: 1.6vmin; align-items: end; }
+.tier { border-radius: 1.2vmin; padding: 2.2vmin 2.4vmin; display: flex; flex-direction: column; gap: 1vmin; min-width: 0; border: 1px solid var(--line); background: var(--panel); position: relative; }
+.tier .t { font-family: var(--mono); font-size: clamp(.68rem, 1.55vmin, 1rem); letter-spacing: .1em; text-transform: uppercase; }
+.tier .d { font-family: var(--display); font-weight: 700; font-size: clamp(1.2rem, 3.6vmin, 2.5rem); line-height: 1; }
+.tier .model { font-family: var(--display); font-weight: 600; font-size: clamp(1rem, 2.7vmin, 1.85rem); line-height: 1.1; }
+.tier .hw { font-family: var(--mono); font-size: clamp(.62rem, 1.4vmin, .9rem); color: var(--muted); }
+.tier .role { align-self: flex-start; border-radius: 999px; padding: .4vmin 1.4vmin; font-family: var(--display); font-weight: 600; font-size: clamp(.75rem, 1.8vmin, 1.15rem); }
+.tier ul { margin: .4vmin 0 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: .7vmin; }
+.tier li { font-size: clamp(.74rem, 1.72vmin, 1.1rem); line-height: 1.33; }
+.tier .route { margin-top: auto; padding-top: 1vmin; border-top: 1px solid var(--line); font-family: var(--mono); font-size: clamp(.62rem, 1.45vmin, .92rem); color: var(--muted); }
+.tier.t0 { min-height: 40vh; border-color: var(--phone-deep); background: linear-gradient(180deg, rgba(45, 212, 191, .12), var(--panel) 45%); }
+.tier.t0 .t, .tier.t0 .d { color: var(--phone); } .tier.t0 .role { background: var(--phone-deep); color: #d8fffa; }
+.tier.t1 { min-height: 45vh; border-color: #2c4f8a; background: linear-gradient(180deg, rgba(111, 155, 255, .14), var(--panel) 45%); }
+.tier.t1 .t, .tier.t1 .d { color: var(--mesh); } .tier.t1 .role { background: var(--mesh-deep); color: #fff; }
+.tier.t2 { min-height: 50vh; border-color: #3456a8; background: linear-gradient(180deg, rgba(59, 111, 224, .22), var(--panel) 50%); }
+.tier.t2 .t, .tier.t2 .d { color: #a9c1ff; } .tier.t2 .role { background: #22408f; color: #fff; }
+.tier.t3, .tier.t4 { min-height: 50vh; background: transparent; border-style: dashed; }
+.tier.t3 { border-color: #5f8cf0; } .tier.t3 .t, .tier.t3 .model { color: #8fb0ff; } .tier.t3 .role { background: transparent; border: 1px dashed #5f8cf0; color: #8fb0ff; }
+.tier.t4 { border-color: var(--cloud); } .tier.t4 .t, .tier.t4 .model { color: var(--cloud); } .tier.t4 .role { background: transparent; border: 1px dashed var(--cloud); color: var(--cloud); }
+.tier.t3 .route, .tier.t4 .route { border-top-style: dashed; }
+.arrowbar { display: flex; align-items: center; gap: 1.5vmin; font-family: var(--mono); font-size: clamp(.65rem, 1.5vmin, .95rem); color: var(--muted); }
+.arrowbar i { flex: 1; height: 2px; background: linear-gradient(90deg, var(--phone), var(--mesh), #a9c1ff); border-radius: 2px; position: relative; }
+.arrowbar i::after { content: ""; position: absolute; right: -2px; top: -5px; border: 6px solid transparent; border-left: 9px solid #a9c1ff; border-right: 0; }
+
+/* 4 · video */
+.vid-slide { gap: 1.6vmin !important; }
+.vid-grid { display: grid; grid-template-columns: 1.7fr 1fr; gap: 2.4vmin; align-items: center; }
+.qs { display: flex; flex-direction: column; gap: 1.4vmin; min-width: 0; }
+.qs-intro { font-size: clamp(.78rem, 1.8vmin, 1.15rem); color: var(--muted); }
+.q { background: var(--panel); border: 1px solid var(--line); border-left: .6vmin solid var(--phone); border-radius: 1vmin; padding: 1.4vmin 1.8vmin; display: flex; flex-direction: column; gap: .7vmin; }
+.q.m { border-left-color: var(--mesh); } .q.w { border-left-color: #a9c1ff; }
+.qn { font-family: var(--mono); font-size: clamp(.6rem, 1.35vmin, .88rem); color: var(--muted); letter-spacing: .04em; }
+.q.p .qn span { color: var(--phone); } .q.m .qn span { color: var(--mesh); } .q.w .qn span { color: #a9c1ff; }
+.q q { font-family: var(--display); font-weight: 600; font-size: clamp(.95rem, 2.35vmin, 1.55rem); line-height: 1.2; quotes: "\201C" "\201D"; }
+.q p { font-size: clamp(.7rem, 1.6vmin, 1rem); color: #c4cee0; }
+.player { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 1.4vmin; overflow: hidden; border: 1px solid var(--line); background: #000; box-shadow: 0 2vmin 6vmin rgba(0, 0, 0, .5); }
+.player video { display: block; width: 100%; height: 100%; object-fit: contain; background: #000; }
+.play { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(5, 8, 15, .35); border: 0; cursor: pointer; color: #fff; transition: background .2s; }
+.play:hover, .play:focus-visible { background: rgba(5, 8, 15, .15); outline: none; }
+.play .disc { width: clamp(64px, 15vmin, 150px); aspect-ratio: 1; border-radius: 50%; background: rgba(255, 255, 255, .95); display: grid; place-items: center; box-shadow: 0 0 0 1.2vmin rgba(255, 255, 255, .18), 0 1.5vmin 4vmin rgba(0, 0, 0, .5); transition: transform .2s; }
+.play:hover .disc, .play:focus-visible .disc { transform: scale(1.06); }
+.play .disc svg { width: 38%; height: 38%; margin-left: 8%; fill: var(--bg); }
+.play .lab { position: absolute; bottom: 3vmin; left: 0; right: 0; text-align: center; font-family: var(--mono); font-size: clamp(11px, 1.6vmin, 15px); letter-spacing: .08em; color: rgba(255, 255, 255, .9); text-shadow: 0 1px 4px #000; }
+.player.playing .play { display: none; }
+.player.paused .play { display: grid; }
+/* 5 · screenshots */
+.shots { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1.6vmin; align-items: start; }
+.shot { margin: 0; display: flex; flex-direction: column; gap: 1vmin; min-width: 0; }
+.shot button { padding: 0; border: 0; background: none; cursor: zoom-in; border-radius: 1.6vmin; display: block; }
+.shot button:focus-visible { outline: 2px solid var(--mesh); outline-offset: 3px; }
+.shot img { display: block; width: 100%; max-height: 54vh; object-fit: cover; object-position: top; aspect-ratio: 1080 / 2410; border-radius: 1.6vmin; border: .4vmin solid #222c40; background: #000; }
+.shot figcaption { font-size: clamp(.68rem, 1.55vmin, 1rem); line-height: 1.3; color: var(--muted); }
+.shot figcaption b { display: block; color: var(--fg); font-family: var(--display); font-weight: 600; font-size: 1.12em; margin-bottom: .2vmin; }
+.shot .tag { display: inline-block; font-family: var(--mono); font-size: .82em; border-radius: 999px; padding: 0 .7em; margin-bottom: .5vmin; border: 1px solid; }
+.tag.p { color: var(--phone); border-color: var(--phone-deep); } .tag.m { color: var(--mesh); border-color: #2c4f8a; } .tag.w { color: #a9c1ff; border-color: #3456a8; }
+.lightbox { position: fixed; inset: 0; z-index: 10; background: rgba(4, 7, 13, .92); display: none; place-items: center; cursor: zoom-out; padding: 3vmin; }
+.lightbox.on { display: grid; }
+.lightbox img { max-height: 94vh; max-width: 94vw; border-radius: 2vmin; border: .5vmin solid #222c40; }
+.lightbox p { position: absolute; bottom: 2vmin; left: 0; right: 0; text-align: center; font-family: var(--mono); font-size: clamp(11px, 1.5vmin, 14px); color: var(--muted); }
+
+/* 6 · use cases */
+.uses { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.8vmin; }
+.use { background: var(--panel); border: 1px solid var(--line); border-radius: 1.1vmin; padding: 1.8vmin 2vmin; display: flex; flex-direction: column; gap: .9vmin; min-width: 0; }
+.use h3 { font-size: clamp(1rem, 2.6vmin, 1.75rem); line-height: 1.1; }
+.use .why { font-size: clamp(.7rem, 1.6vmin, 1rem); color: var(--muted); }
+.use ol { list-style: none; margin: .3vmin 0 0; padding: 0; display: flex; flex-direction: column; gap: .7vmin; }
+.use li { display: grid; grid-template-columns: 4.2ch 1fr; gap: .8vmin; font-size: clamp(.72rem, 1.68vmin, 1.06rem); line-height: 1.3; align-items: baseline; }
+.use li span { font-family: var(--mono); font-size: .82em; font-weight: 500; text-align: center; border-radius: .5vmin; padding: .1vmin 0; }
+.use li .p { background: var(--phone-deep); color: #d8fffa; } .use li .m { background: var(--mesh-deep); color: #fff; } .use li .w { background: #22408f; color: #fff; }
+
+/* 7 · try it */
+.try { display: grid; grid-template-columns: 1fr 30vmin; gap: 3vmin; align-items: stretch; }
+.try-steps { display: flex; flex-direction: column; gap: 1.3vmin; min-width: 0; }
+.row-k { font-family: var(--display); font-weight: 600; font-size: clamp(.95rem, 2.3vmin, 1.5rem); }
+.row-k span { font-family: var(--mono); font-weight: 400; font-size: .6em; color: var(--muted); margin-left: .8em; letter-spacing: .05em; }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2vmin; }
+.steps.three { grid-template-columns: repeat(3, 1fr); }
+.step { background: var(--panel); border: 1px solid var(--line); border-radius: .9vmin; padding: 1.2vmin 1.6vmin; min-width: 0; }
+.step .n { font-family: var(--mono); color: var(--mesh); font-size: clamp(.65rem, 1.45vmin, .95rem); letter-spacing: .1em; }
+.step h3 { font-size: clamp(.9rem, 2.2vmin, 1.4rem); margin: .2vmin 0 .5vmin; }
+.step p { font-size: clamp(.72rem, 1.6vmin, 1rem); color: var(--muted); line-height: 1.35; }
+.step code.cmd { display: block; font-size: clamp(.64rem, 1.45vmin, .92rem); background: var(--bg2); border: 1px solid var(--line); border-radius: .6vmin; padding: .6vmin .9vmin; margin: .3vmin 0 .6vmin; overflow-wrap: anywhere; }
+.step code.in { display: inline; padding: .1vmin .5vmin; background: var(--bg2); border: 1px solid var(--line); border-radius: .5vmin; }
+.qr { background: var(--panel); border: 1px solid var(--line); border-radius: 1.4vmin; padding: 2.4vmin; display: flex; flex-direction: column; gap: 1.6vmin; align-items: center; justify-content: center; text-align: center; }
+.qr svg { width: 100%; height: auto; background: #fff; border-radius: 1vmin; padding: 1.2vmin; }
+.qr .url { font-family: var(--mono); font-size: clamp(.7rem, 1.7vmin, 1.1rem); color: var(--fg); overflow-wrap: anywhere; }
+
+.hud { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; align-items: center;
+  padding: 1.2vmin max(6vmin, env(safe-area-inset-right, 0px)) calc(1.2vmin + env(safe-area-inset-bottom, 0px)) max(6vmin, env(safe-area-inset-left, 0px));
+  font-family: var(--mono); font-size: clamp(11px, 1.6vmin, 15px); color: var(--muted); }
+.hud button { background: transparent; border: 1px solid var(--line); color: var(--muted); font: inherit; padding: .4em .9em; border-radius: 999px; cursor: pointer; }
+.hud button:hover, .hud button:focus-visible { color: var(--fg); border-color: var(--mesh); outline: none; }
+.progress { position: fixed; left: 0; top: 0; height: .5vmin; background: linear-gradient(90deg, var(--phone), var(--mesh)); width: 0; transition: width .25s; }
+@media (prefers-reduced-motion: reduce) { .progress { transition: none; } }
+@media (max-width: 820px) {
+  .slide { overflow-y: auto; justify-content: flex-start; }
+  .pitch, .try { grid-template-columns: 1fr; }
+  .techs, .uses, .steps, .steps.three { grid-template-columns: 1fr 1fr; }
+  .vid-grid { grid-template-columns: 1fr; } .flow { flex-wrap: wrap; gap: 1vmin; } .flow i { display: none; }
+  .tiers5 { grid-template-columns: 1fr; } .tier { min-height: 0 !important; }
+  .shots { grid-template-columns: repeat(3, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="deck" id="deck">
+
+<!-- 1 · elevator pitch -->
+<section class="slide" data-title="Gem Mesh">
+  <div class="eyebrow">The Google Gemma Hardware Hackathon · AGI House · Gemma 4 on LiteRT-LM</div>
+  <div class="pitch">
+    <div>
+      <h1><span class="grad">Gem Mesh</span></h1>
+      <div class="tagline">Your phone, laptop and workstation, working as one private AI.</div>
+    </div>
+    <div class="pitch-body">
+      <p class="muted">Today you choose between a cloud assistant that sees everything and one local model too small for real work.</p>
+      <p><strong>Gem Mesh turns the devices you already own into one assistant.</strong> Switch them on and they find each other on Wi-Fi or a phone hotspot: no accounts, no setup. The phone hears, sees and checks every request, then hands it to the smallest Gemma that can do the job: <strong>E4B</strong> on the Pixel, <strong>26B</strong> on the laptop, <strong>31B</strong> on the workstation.</p>
+      <p class="muted"><strong>Data sovereignty by default:</strong> your data stays on hardware you own, under rules you set. Open source, built on LiteRT-LM, no cloud anywhere in the loop.</p>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat p"><b>0 setup</b><span>devices discover each other on the network (mDNS) and join the mesh by themselves</span></div>
+    <div class="stat m"><b>4</b><span>Gemma 4 sizes, each on the device it fits: E4B · 12B · 26B · 31B</span></div>
+    <div class="stat c"><b>0 bytes</b><span>left the mesh. Your data, your devices, your rules, even offline</span></div>
+  </div>
+  <p class="hint">→ or Space to advance · ← to go back</p>
+</section>
+
+<!-- 2 · technology -->
+<section class="slide" data-title="Technology">
+  <div class="eyebrow">Technology · our sponsors' stack, end to end</div>
+  <h2>Gemma on LiteRT-LM, from the Pixel to the GPU</h2>
+  <div class="flow" aria-label="How a request flows through the stack">
+    <div class="fl p"><b>Voice · photo · file</b><span>camera, mic and files on the phone</span></div><i></i>
+    <div class="fl p"><b>Gemma 4 E4B</b><span>LiteRT-LM on the Pixel 11 Pro GPU</span></div><i></i>
+    <div class="fl p"><b>Router + privacy check</b><span>on the phone, before anything moves</span></div><i></i>
+    <div class="fl m"><b>Auto-discovery</b><span>mDNS on Wi-Fi or hotspot</span></div><i></i>
+    <div class="fl w"><b>Gemma 4 12B–31B</b><span>LiteRT-LM on your Macs</span></div><i></i>
+    <div class="fl c"><b>Answer + badge</b><span>which device, which model, 0 bytes out</span></div>
+  </div>
+  <div class="techs">
+    <div class="tech g1"><div class="u">Google DeepMind</div><h3>Gemma 4 on every tier</h3><ul><li>E4B on the phone: it hears and sees</li><li>12B and 26B MoE on laptops; 26B thinking and 31B on workstations</li><li>EmbeddingGemma 2 (270M) indexes your memory</li></ul></div>
+    <div class="tech g2"><div class="u">Google AI Edge</div><h3>LiteRT-LM, one engine</h3><ul><li>Android SDK on the phone, Python engine on Macs and Linux</li><li>GPU on the Pixel and on Apple silicon</li><li><code>.litertlm</code> builds from litert-community; session KV reuse, tools, vision, audio</li></ul></div>
+    <div class="tech g4"><div class="u">Google Pixel</div><h3>Pixel 11 Pro is T0</h3><ul><li>Gemma 4 E4B on its GPU</li><li>Holds your memory and runs the privacy check</li><li>Answers alone in Airplane Mode</li></ul></div>
+    <div class="tech g6"><div class="u">AGI, Inc.</div><h3>Mobile-use MCP</h3><ul><li>Lets the assistant act inside apps on the phone</li><li>Plugs in as MCP tools the mesh can call</li><li>Each action asks first, like every tool in the mesh</li></ul></div>
+  </div>
+  <p class="also"><b>Open-source glue:</b> zeroconf mDNS · FastAPI nodes with an OpenAI-compatible API · a per-mesh certificate authority for HTTPS pairing · Pillow, pypdf, fpdf2 for photo and PDF actions · SwiftUI iPhone app on the same engine.</p>
+</section>
+
+<!-- 3 · models -->
+<section class="slide" data-title="Right-sized Gemma">
+  <div class="eyebrow">Which model, where, and why</div>
+  <h2>Each device runs the biggest Gemma it can. Bigger tiers are optional.</h2>
+  <div class="tiers5">
+    <div class="tier t0">
+      <div class="t">T0 · Phone</div>
+      <div class="model">Gemma 4 E4B</div>
+      <div class="hw">4B effective · E2B on 6 GB · Pixel 11 Pro GPU</div>
+      <span class="role">Ears and eyes</span>
+      <ul>
+        <li>Only the E models hear and see: voice and photos stay on the phone.</li>
+        <li>Always with you; answers alone in Airplane Mode.</li>
+        <li>Checks every request first and holds your memory.</li>
+      </ul>
+      <div class="route">up to 1,500 tokens stays here</div>
+    </div>
+    <div class="tier t1">
+      <div class="t">T1 · Laptop</div>
+      <div class="model">Gemma 4 12B → 26B</div>
+      <div class="hw">12B on 24 GB · 26B MoE on 32 GB+</div>
+      <span class="role">The analyst</span>
+      <ul>
+        <li>26B mixture of experts, 4B active: 69 tok/s on our M3 Max.</li>
+        <li>Reads long private documents, compares, drafts.</li>
+        <li>Comes on the plane, over the phone's hotspot.</li>
+      </ul>
+      <div class="route">above 1,500 tokens</div>
+    </div>
+    <div class="tier t2">
+      <div class="t">T2 · Workstation</div>
+      <div class="model">Gemma 4 26B → 31B</div>
+      <div class="hw">26B thinking · 31B dense · RTX 5090 or M5 Ultra</div>
+      <span class="role">The strategist</span>
+      <ul>
+        <li>Thinking on and a bigger window: math across clauses, multi-step work.</li>
+        <li>About 3× faster than the laptop on the same 26B.</li>
+        <li>Shared and always on, yet keeps nothing.</li>
+      </ul>
+      <div class="route">above 3,000 tokens, preferred</div>
+    </div>
+    <div class="tier t3">
+      <div class="t">T3 · Optional</div>
+      <div class="model">Private servers</div>
+      <div class="hw">Kimi K3 · DeepSeek V4 Pro</div>
+      <span class="role">Open frontier-class</span>
+      <ul>
+        <li>Trillion-parameter open models on hardware you control.</li>
+        <li>Any OpenAI-compatible server on your network or VPN.</li>
+      </ul>
+      <div class="route">vision · not in the demo</div>
+    </div>
+    <div class="tier t4">
+      <div class="t">T4 · Optional</div>
+      <div class="model">Frontier</div>
+      <div class="hw">Gemini · Google AI Studio</div>
+      <span class="role">Ask first</span>
+      <ul>
+        <li>Public text only, redacted first.</li>
+        <li>You approve each request; a policy file can set it to never.</li>
+      </ul>
+      <div class="route">off today · 0 asks</div>
+    </div>
+  </div>
+  <div class="arrowbar"><span>smaller · instant · private by default</span><i></i><span>bigger · deeper · only if you allow it</span></div>
+  <p class="muted small">The router picks the smallest tier that fits, and private content caps the ceiling at your own devices. In the demo: a Pixel 11 Pro on E4B, a MacBook on the 26B, and a second MacBook playing the workstation with the 26B and thinking on. T3 and T4 stay off: no cloud in the loop.</p>
+</section>
+
+<!-- 4 · demo video -->
+<section class="slide vid-slide" data-title="Demo">
+  <div class="eyebrow">Demo · 67 seconds · real devices, no cloud</div>
+  <h2>A day in the life of a startup founder</h2>
+  <div class="vid-grid">
+    <div class="player" id="player">
+      <video id="demo" preload="metadata" playsinline poster="media/gem-mesh-demo-poster.jpg">
+        <source src="media/gem-mesh-demo.mp4" type="video/mp4">
+      </video>
+      <button type="button" class="play" id="play" aria-label="Play the demo video">
+        <span class="disc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3l16 9-16 9z"/></svg></span>
+        <span class="lab" id="play-lab">PRESS ENTER OR CLICK TO PLAY</span>
+      </button>
+    </div>
+    <div class="qs">
+      <p class="qs-intro">Priya's AI lab competes with Claude and ChatGPT, so her numbers can't touch a cloud AI. She asks three questions, by voice:</p>
+      <div class="q p"><div class="qn">01 · <span>Pixel · E4B · nothing left the phone</span></div><q>Give me our key numbers: burn, runway and revenue.</q><p>$3.2M a month burn · 5 months runway · $14M ARR.</p></div>
+      <div class="q m"><div class="qn">02 · <span>photo read on the Pixel → laptop · 26B</span></div><q>Compare the whiteboard with my negotiation notes. Are we inside our walk-away? Draft a counter.</q><p>No: 1.5x participating and 2 board seats break her limits.</p></div>
+      <div class="q w"><div class="qn">03 · <span>workstation · 26B thinking · 0 bytes left the mesh</span></div><q>Northwind raised our valuation. Is it actually better? Show me what common gets if we're acquired for $200 million.</q><p>No: the whiteboard offer costs the founders $20M. Stick to the term sheet.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · screenshots -->
+<section class="slide" data-title="Screenshots">
+  <div class="eyebrow">On the Pixel 11 Pro · click any screen to enlarge</div>
+  <h2>Every answer says which device, which model, and that nothing left</h2>
+  <div class="shots">
+    <figure class="shot"><button type="button" data-full="img/screens/startup-1-key-numbers.png"><img src="img/screens/startup-1-key-numbers.png" alt="Key numbers answered on the phone by E4B: cash, burn, runway, ARR. Badge: phone, E4B, nothing left the phone. Route log: rule hit Northwind, sensitive, pixel-11-pro gemma4-e4b."></button>
+      <figcaption><span class="tag p">T0 · E4B</span><b>Private notes, on the phone</b>A rule hit marks it sensitive; the phone answers itself.</figcaption></figure>
+    <figure class="shot"><button type="button" data-full="img/screens/startup-2-red-board-1.png"><img src="img/screens/startup-2-red-board-1.png" alt="A photo taken with the camera button and the question; the phone looks at the image on device, then compares it with the negotiation notes."></button>
+      <figcaption><span class="tag p">T0 · vision</span><b>The photo stays on the phone</b>E4B reads the whiteboard on device, then hands off the text.</figcaption></figure>
+    <figure class="shot"><button type="button" data-full="img/screens/startup-2-red-board-2.png"><img src="img/screens/startup-2-red-board-2.png" alt="Table comparing the whiteboard with the walk-away limits: pre-money, liquidation preference, board seats, with two critical violations."></button>
+      <figcaption><span class="tag m">T1 · 26B</span><b>Two limits broken</b>The laptop checks the board against her secret walk-away.</figcaption></figure>
+    <figure class="shot"><button type="button" data-full="img/screens/startup-3-acquisition-4.png"><img src="img/screens/startup-3-acquisition-4.png" alt="Comparison of how $200M splits under the term sheet and the whiteboard offer, verdict stick to the term sheet. Badge: tzhang-mac, gemma4-26b thinking, 0 bytes left the mesh."></button>
+      <figcaption><span class="tag w">T2 · 26B thinking</span><b>"Stick to the term sheet"</b>The deal math, with 0 bytes left the mesh.</figcaption></figure>
+    <figure class="shot"><button type="button" data-full="img/screens/mesh-away-shown.png"><img src="img/screens/mesh-away-shown.png" alt="Mesh dashboard: about 70.7k tokens processed in 24 hours, 0 B left the mesh, a map of the phone and two Macs, and T4 Gemini with zero asks."></button>
+      <figcaption><span class="tag m">Mesh map</span><b>70.7k tokens, 0 B out</b>The phone and both Macs; the cloud tier never asked.</figcaption></figure>
+    <figure class="shot"><button type="button" data-full="img/screens/mesh-tokens-by-tier.png"><img src="img/screens/mesh-tokens-by-tier.png" alt="Tokens by tier: T0 phone 18.9k, T1 36.0k, T2 15.8k, T4 Gemini 0, with private turn counts and cache reuse."></button>
+      <figcaption><span class="tag w">By tier</span><b>Work lands where it fits</b>Phone 18.9k · laptop 36.0k · workstation 15.8k · cloud 0.</figcaption></figure>
+  </div>
+</section>
+
+<!-- 6 · more use cases -->
+<section class="slide" data-title="What else">
+  <div class="eyebrow">Beyond the founder · tiered intelligence on devices you own</div>
+  <h2>Anywhere data is private and the network can't be trusted</h2>
+  <div class="uses">
+    <div class="use"><h3>Clinician on house calls</h3><div class="why">Patient data never leaves the practice.</div>
+      <ol><li><span class="p">T0</span>Photographs a wound, dictates the visit.</li><li><span class="m">T1</span>Drafts the note against the chart.</li><li><span class="w">T2</span>Checks interactions across the history.</li></ol></div>
+    <div class="use"><h3>Client-safe law firm</h3><div class="why">Client names in the rule file never go out.</div>
+      <ol><li><span class="p">T0</span>Voice memo after the call, on the train.</li><li><span class="m">T1</span>Summarizes the 40-page lease.</li><li><span class="w">T2</span>Compares it with firm templates; writes the memo.</li></ol></div>
+    <div class="use"><h3>Robots and drones</h3><div class="why">Physical AI with a brain that scales with range.</div>
+      <ol><li><span class="p">T0</span>On-board E2B sees and reacts, no link needed.</li><li><span class="m">T1</span>Base-station laptop plans the next route.</li><li><span class="w">T2</span>Lab workstation reviews the day's logs.</li></ol></div>
+    <div class="use"><h3>Off-grid crews</h3><div class="why">Disaster response, field science, ships.</div>
+      <ol><li><span class="p">T0</span>Phones on a hotspot triage by photo and voice.</li><li><span class="m">T1</span>Laptop in the truck merges reports into a brief.</li><li><span class="w">T2</span>Back at base, the big model plans the next day.</li></ol></div>
+    <div class="use"><h3>Classrooms</h3><div class="why">Children's data stays in the building.</div>
+      <ol><li><span class="p">T0</span>Tablet tutor listens to a child read aloud.</li><li><span class="m">T1</span>Teacher's laptop gives feedback on essays.</li><li><span class="w">T2</span>School server builds lesson plans overnight.</li></ol></div>
+    <div class="use"><h3>An intimate friend, only yours</h3><div class="why">Knows you deeply; no company reads a word.</div>
+      <ol><li><span class="p">T0</span>Lives on your phone: hears you, remembers, works offline.</li><li><span class="m">T1</span>Laptop nearby: deeper talks, your photos fixed privately.</li><li><span class="w">T2</span>Home box thinks through the hard days; keeps nothing.</li></ol></div>
+  </div>
+  <p class="muted small">Every app gets the same mesh: routing across devices, the privacy check, memory, a queue for when a tier is away, and tools that ask first. An app adds its own rule file, persona and screens. Already in the repo: <code>gem-mesh code</code> answers a coding agent's model calls from your own mesh.</p>
+</section>
+
+<!-- 7 · try it -->
+<section class="slide" data-title="Try it">
+  <div class="eyebrow">Open source · Apache 2.0 · try it today</div>
+  <h2>Clone it, install it, talk to it</h2>
+  <div class="try">
+    <div class="try-steps">
+      <div class="row-k">On your Mac <span>Apple silicon, 8 GB or more · 10 minutes + download</span></div>
+      <div class="steps">
+        <div class="step"><div class="n">1</div><h3>Clone</h3><code class="cmd">git clone https://github.com/demobo-com/gem-mesh.git gem-mesh</code><p>then <code class="in">cd gem-mesh</code></p></div>
+        <div class="step"><div class="n">2</div><h3>Install</h3><code class="cmd">./install.sh</code><p>Picks the Gemma 4 that fits your Mac, E2B to the 26B, and runs it as a mesh node.</p></div>
+        <div class="step"><div class="n">3</div><h3>Talk to it</h3><code class="cmd">gem-mesh</code><p>Demo files are in <code class="in">demo/files/</code>; naming one attaches it.</p></div>
+        <div class="step"><div class="n">4</div><h3>Pair a phone</h3><code class="cmd">gem-mesh pair</code><p>Shows the address, checks and a QR code.</p></div>
+      </div>
+      <div class="row-k">On your Android phone <span>Android 11+, 8 GB recommended · over USB until the APK ships</span></div>
+      <div class="steps three">
+        <div class="step"><div class="n">1</div><h3>Install the app</h3><code class="cmd">cd clients/android && ./gradlew installDebug</code><p>USB debugging on; Android Studio once for the SDK.</p></div>
+        <div class="step"><div class="n">2</div><h3>Open it on Wi-Fi</h3><p>It downloads Gemma 4 E4B (3.7 GB) once, then runs it on the phone.</p></div>
+        <div class="step"><div class="n">3</div><h3>Find your Mac</h3><p><b>Settings → Your Mac.</b> On the same Wi-Fi it appears by itself; or scan the QR.</p></div>
+      </div>
+      <div class="row-k">Optional: a bigger node <span>Linux + NVIDIA, M5 Ultra Mac Studio, or any spare Mac</span></div>
+      <div class="steps three">
+        <div class="step"><div class="n">1</div><h3>Same repo</h3><p>Clone it on that machine, on the same Wi-Fi.</p></div>
+        <div class="step"><div class="n">2</div><h3>Install as a node</h3><code class="cmd">./install.sh --role workstation</code><p>Linux with NVIDIA is detected without the flag.</p></div>
+        <div class="step"><div class="n">3</div><h3>Nothing else</h3><p>Your Mac and phone find it; <code class="in">gem-mesh nodes</code> lists it.</p></div>
+      </div>
+    </div>
+    <div class="qr">
+      <svg viewBox="0 0 31 31" role="img" aria-label="QR code for github.com/demobo-com/gem-mesh"><path d="M1,1H2V2H1zM2,1H3V2H2zM3,1H4V2H3zM4,1H5V2H4zM5,1H6V2H5zM6,1H7V2H6zM7,1H8V2H7zM9,1H10V2H9zM10,1H11V2H10zM11,1H12V2H11zM12,1H13V2H12zM13,1H14V2H13zM14,1H15V2H14zM19,1H20V2H19zM23,1H24V2H23zM24,1H25V2H24zM25,1H26V2H25zM26,1H27V2H26zM27,1H28V2H27zM28,1H29V2H28zM29,1H30V2H29zM1,2H2V3H1zM7,2H8V3H7zM9,2H10V3H9zM10,2H11V3H10zM11,2H12V3H11zM12,2H13V3H12zM13,2H14V3H13zM15,2H16V3H15zM17,2H18V3H17zM18,2H19V3H18zM20,2H21V3H20zM23,2H24V3H23zM29,2H30V3H29zM1,3H2V4H1zM3,3H4V4H3zM4,3H5V4H4zM5,3H6V4H5zM7,3H8V4H7zM9,3H10V4H9zM10,3H11V4H10zM11,3H12V4H11zM14,3H15V4H14zM15,3H16V4H15zM16,3H17V4H16zM20,3H21V4H20zM21,3H22V4H21zM23,3H24V4H23zM25,3H26V4H25zM26,3H27V4H26zM27,3H28V4H27zM29,3H30V4H29zM1,4H2V5H1zM3,4H4V5H3zM4,4H5V5H4zM5,4H6V5H5zM7,4H8V5H7zM10,4H11V5H10zM11,4H12V5H11zM14,4H15V5H14zM17,4H18V5H17zM18,4H19V5H18zM20,4H21V5H20zM21,4H22V5H21zM23,4H24V5H23zM25,4H26V5H25zM26,4H27V5H26zM27,4H28V5H27zM29,4H30V5H29zM1,5H2V6H1zM3,5H4V6H3zM4,5H5V6H4zM5,5H6V6H5zM7,5H8V6H7zM9,5H10V6H9zM10,5H11V6H10zM11,5H12V6H11zM13,5H14V6H13zM14,5H15V6H14zM15,5H16V6H15zM17,5H18V6H17zM18,5H19V6H18zM19,5H20V6H19zM20,5H21V6H20zM23,5H24V6H23zM25,5H26V6H25zM26,5H27V6H26zM27,5H28V6H27zM29,5H30V6H29zM1,6H2V7H1zM7,6H8V7H7zM10,6H11V7H10zM12,6H13V7H12zM13,6H14V7H13zM19,6H20V7H19zM21,6H22V7H21zM23,6H24V7H23zM29,6H30V7H29zM1,7H2V8H1zM2,7H3V8H2zM3,7H4V8H3zM4,7H5V8H4zM5,7H6V8H5zM6,7H7V8H6zM7,7H8V8H7zM9,7H10V8H9zM11,7H12V8H11zM13,7H14V8H13zM15,7H16V8H15zM17,7H18V8H17zM19,7H20V8H19zM21,7H22V8H21zM23,7H24V8H23zM24,7H25V8H24zM25,7H26V8H25zM26,7H27V8H26zM27,7H28V8H27zM28,7H29V8H28zM29,7H30V8H29zM12,8H13V9H12zM13,8H14V9H13zM14,8H15V9H14zM15,8H16V9H15zM17,8H18V9H17zM19,8H20V9H19zM20,8H21V9H20zM1,9H2V10H1zM4,9H5V10H4zM5,9H6V10H5zM6,9H7V10H6zM7,9H8V10H7zM8,9H9V10H8zM9,9H10V10H9zM11,9H12V10H11zM12,9H13V10H12zM14,9H15V10H14zM17,9H18V10H17zM18,9H19V10H18zM20,9H21V10H20zM22,9H23V10H22zM25,9H26V10H25zM27,9H28V10H27zM28,9H29V10H28zM29,9H30V10H29zM1,10H2V11H1zM3,10H4V11H3zM4,10H5V11H4zM5,10H6V11H5zM8,10H9V11H8zM9,10H10V11H9zM14,10H15V11H14zM15,10H16V11H15zM16,10H17V11H16zM18,10H19V11H18zM19,10H20V11H19zM20,10H21V11H20zM22,10H23V11H22zM24,10H25V11H24zM25,10H26V11H25zM27,10H28V11H27zM28,10H29V11H28zM1,11H2V12H1zM2,11H3V12H2zM4,11H5V12H4zM5,11H6V12H5zM7,11H8V12H7zM9,11H10V12H9zM10,11H11V12H10zM11,11H12V12H11zM12,11H13V12H12zM13,11H14V12H13zM14,11H15V12H14zM16,11H17V12H16zM17,11H18V12H17zM21,11H22V12H21zM24,11H25V12H24zM25,11H26V12H25zM27,11H28V12H27zM1,12H2V13H1zM4,12H5V13H4zM6,12H7V13H6zM11,12H12V13H11zM14,12H15V13H14zM18,12H19V13H18zM21,12H22V13H21zM22,12H23V13H22zM23,12H24V13H23zM24,12H25V13H24zM26,12H27V13H26zM29,12H30V13H29zM4,13H5V14H4zM7,13H8V14H7zM8,13H9V14H8zM12,13H13V14H12zM13,13H14V14H13zM14,13H15V14H14zM17,13H18V14H17zM19,13H20V14H19zM20,13H21V14H20zM21,13H22V14H21zM23,13H24V14H23zM24,13H25V14H24zM29,13H30V14H29zM2,14H3V15H2zM5,14H6V15H5zM6,14H7V15H6zM11,14H12V15H11zM12,14H13V15H12zM14,14H15V15H14zM15,14H16V15H15zM16,14H17V15H16zM18,14H19V15H18zM19,14H20V15H19zM23,14H24V15H23zM24,14H25V15H24zM25,14H26V15H25zM26,14H27V15H26zM27,14H28V15H27zM28,14H29V15H28zM29,14H30V15H29zM2,15H3V16H2zM3,15H4V16H3zM4,15H5V16H4zM6,15H7V16H6zM7,15H8V16H7zM8,15H9V16H8zM9,15H10V16H9zM11,15H12V16H11zM12,15H13V16H12zM14,15H15V16H14zM16,15H17V16H16zM20,15H21V16H20zM21,15H22V16H21zM22,15H23V16H22zM23,15H24V16H23zM25,15H26V16H25zM27,15H28V16H27zM29,15H30V16H29zM9,16H10V17H9zM12,16H13V17H12zM13,16H14V17H13zM20,16H21V17H20zM24,16H25V17H24zM25,16H26V17H25zM27,16H28V17H27zM29,16H30V17H29zM1,17H2V18H1zM3,17H4V18H3zM5,17H6V18H5zM6,17H7V18H6zM7,17H8V18H7zM8,17H9V18H8zM9,17H10V18H9zM10,17H11V18H10zM12,17H13V18H12zM15,17H16V18H15zM20,17H21V18H20zM21,17H22V18H21zM22,17H23V18H22zM26,17H27V18H26zM1,18H2V19H1zM2,18H3V19H2zM3,18H4V19H3zM5,18H6V19H5zM6,18H7V19H6zM8,18H9V19H8zM14,18H15V19H14zM15,18H16V19H15zM16,18H17V19H16zM18,18H19V19H18zM19,18H20V19H19zM20,18H21V19H20zM25,18H26V19H25zM27,18H28V19H27zM28,18H29V19H28zM1,19H2V20H1zM2,19H3V20H2zM4,19H5V20H4zM6,19H7V20H6zM7,19H8V20H7zM10,19H11V20H10zM13,19H14V20H13zM16,19H17V20H16zM19,19H20V20H19zM20,19H21V20H20zM25,19H26V20H25zM26,19H27V20H26zM29,19H30V20H29zM1,20H2V21H1zM2,20H3V21H2zM3,20H4V21H3zM6,20H7V21H6zM9,20H10V21H9zM11,20H12V21H11zM15,20H16V21H15zM17,20H18V21H17zM20,20H21V21H20zM23,20H24V21H23zM26,20H27V21H26zM27,20H28V21H27zM1,21H2V22H1zM2,21H3V22H2zM6,21H7V22H6zM7,21H8V22H7zM8,21H9V22H8zM10,21H11V22H10zM13,21H14V22H13zM14,21H15V22H14zM15,21H16V22H15zM16,21H17V22H16zM17,21H18V22H17zM18,21H19V22H18zM21,21H22V22H21zM22,21H23V22H22zM23,21H24V22H23zM24,21H25V22H24zM25,21H26V22H25zM26,21H27V22H26zM27,21H28V22H27zM28,21H29V22H28zM9,22H10V23H9zM10,22H11V23H10zM11,22H12V23H11zM12,22H13V23H12zM13,22H14V23H13zM15,22H16V23H15zM16,22H17V23H16zM18,22H19V23H18zM19,22H20V23H19zM21,22H22V23H21zM25,22H26V23H25zM26,22H27V23H26zM1,23H2V24H1zM2,23H3V24H2zM3,23H4V24H3zM4,23H5V24H4zM5,23H6V24H5zM6,23H7V24H6zM7,23H8V24H7zM9,23H10V24H9zM10,23H11V24H10zM12,23H13V24H12zM13,23H14V24H13zM15,23H16V24H15zM16,23H17V24H16zM17,23H18V24H17zM20,23H21V24H20zM21,23H22V24H21zM23,23H24V24H23zM25,23H26V24H25zM26,23H27V24H26zM1,24H2V25H1zM7,24H8V25H7zM9,24H10V25H9zM15,24H16V25H15zM16,24H17V25H16zM18,24H19V25H18zM20,24H21V25H20zM21,24H22V25H21zM25,24H26V25H25zM1,25H2V26H1zM3,25H4V26H3zM4,25H5V26H4zM5,25H6V26H5zM7,25H8V26H7zM9,25H10V26H9zM12,25H13V26H12zM14,25H15V26H14zM15,25H16V26H15zM16,25H17V26H16zM17,25H18V26H17zM20,25H21V26H20zM21,25H22V26H21zM22,25H23V26H22zM23,25H24V26H23zM24,25H25V26H24zM25,25H26V26H25zM26,25H27V26H26zM29,25H30V26H29zM1,26H2V27H1zM3,26H4V27H3zM4,26H5V27H4zM5,26H6V27H5zM7,26H8V27H7zM9,26H10V27H9zM10,26H11V27H10zM11,26H12V27H11zM13,26H14V27H13zM14,26H15V27H14zM16,26H17V27H16zM17,26H18V27H17zM18,26H19V27H18zM19,26H20V27H19zM22,26H23V27H22zM29,26H30V27H29zM1,27H2V28H1zM3,27H4V28H3zM4,27H5V28H4zM5,27H6V28H5zM7,27H8V28H7zM11,27H12V28H11zM15,27H16V28H15zM16,27H17V28H16zM21,27H22V28H21zM22,27H23V28H22zM24,27H25V28H24zM25,27H26V28H25zM27,27H28V28H27zM28,27H29V28H28zM29,27H30V28H29zM1,28H2V29H1zM7,28H8V29H7zM11,28H12V29H11zM15,28H16V29H15zM16,28H17V29H16zM23,28H24V29H23zM24,28H25V29H24zM26,28H27V29H26zM27,28H28V29H27zM29,28H30V29H29zM1,29H2V30H1zM2,29H3V30H2zM3,29H4V30H3zM4,29H5V30H4zM5,29H6V30H5zM6,29H7V30H6zM7,29H8V30H7zM9,29H10V30H9zM10,29H11V30H10zM11,29H12V30H11zM12,29H13V30H12zM13,29H14V30H13zM15,29H16V30H15zM19,29H20V30H19zM20,29H21V30H20zM21,29H22V30H21zM23,29H24V30H23zM25,29H26V30H25z" fill="#0a0f1a"/></svg>
+      <div class="url">github.com/demobo-com/gem-mesh</div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Enlarged screenshot"><img id="lightbox-img" alt=""><p>Esc or click to close</p></div>
+
+<div class="hud">
+  <span id="title"></span>
+  <span>
+    <button type="button" id="prev" aria-label="Previous slide">←</button>
+    <span id="counter" style="margin:0 1em"></span>
+    <button type="button" id="next" aria-label="Next slide">→</button>
+  </span>
+</div>
+
+<script>
+(function () {
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var i = 0;
+  var counter = document.getElementById('counter');
+  var title = document.getElementById('title');
+  var progress = document.getElementById('progress');
+
+  /* Demo video: never autoplays. Enter, Space or K plays and pauses on its slide; F goes full screen. */
+  var video = document.getElementById('demo');
+  var player = document.getElementById('player');
+  var playBtn = document.getElementById('play');
+  var playLab = document.getElementById('play-lab');
+  function toggleVideo() {
+    if (video.paused || video.ended) { video.play(); } else { video.pause(); }
+  }
+  playBtn.addEventListener('click', function () { toggleVideo(); playBtn.blur(); });
+  video.addEventListener('play', function () { player.classList.add('playing'); player.classList.remove('paused'); video.controls = true; });
+  video.addEventListener('pause', function () { player.classList.remove('playing'); player.classList.add('paused'); playLab.textContent = 'PAUSED · ENTER TO RESUME'; });
+  video.addEventListener('ended', function () { playLab.textContent = 'ENTER TO WATCH AGAIN'; });
+  function onVideoSlide() { return slides[i].contains(video); }
+
+  /* Screenshots: click to enlarge, Esc or click to close. */
+  var box = document.getElementById('lightbox');
+  var boxImg = document.getElementById('lightbox-img');
+  Array.prototype.forEach.call(document.querySelectorAll('.shot button'), function (b) {
+    b.addEventListener('click', function () {
+      boxImg.src = b.getAttribute('data-full'); boxImg.alt = b.querySelector('img').alt;
+      box.classList.add('on');
+    });
+  });
+  function closeBox() { box.classList.remove('on'); }
+  box.addEventListener('click', closeBox);
+
+  function show(n) {
+    n = Math.max(0, Math.min(slides.length - 1, n));
+    if (n !== i && onVideoSlide() && !video.paused) video.pause();
+    closeBox();
+    slides[i].classList.remove('active');
+    i = n;
+    slides[i].classList.add('active');
+    counter.textContent = (i + 1) + ' / ' + slides.length;
+    title.textContent = slides[i].getAttribute('data-title') || '';
+    progress.style.width = ((i + 1) / slides.length * 100) + '%';
+    try { history.replaceState(null, '', '#' + (i + 1)); } catch (e) {}
+  }
+  function next() { show(i + 1); }
+  function prev() { show(i - 1); }
+  document.addEventListener('keydown', function (e) {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if (box.classList.contains('on')) { if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); closeBox(); } return; }
+    if (onVideoSlide()) {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'k' || e.key === 'K') { e.preventDefault(); toggleVideo(); return; }
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        if (document.fullscreenElement) document.exitFullscreen();
+        else if (video.requestFullscreen) video.requestFullscreen();
+        else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+        return;
+      }
+      if (document.fullscreenElement && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) return;  /* let the player seek */
+    }
+    switch (e.key) {
+      case ' ': case 'ArrowRight': case 'ArrowDown': case 'PageDown': case 'Enter': e.preventDefault(); next(); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': case 'Backspace': e.preventDefault(); prev(); break;
+      case 'Home': e.preventDefault(); show(0); break;
+      case 'End': e.preventDefault(); show(slides.length - 1); break;
+    }
+  });
+  document.getElementById('next').addEventListener('click', next);
+  document.getElementById('prev').addEventListener('click', prev);
+  var x0 = null;
+  document.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', function (e) {
+    if (x0 === null) return;
+    var dx = e.changedTouches[0].clientX - x0; x0 = null;
+    if (Math.abs(dx) > 50 && !box.classList.contains('on')) { if (dx < 0) next(); else prev(); }
+  }, { passive: true });
+  var start = parseInt((location.hash || '#1').slice(1), 10);
+  slides[0].classList.add('active');
+  show(isNaN(start) ? 0 : start - 1);
+})();
+</script>
+</body>
+</html>
