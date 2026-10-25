@@ -45,13 +45,14 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.demobo.mesh.ui.theme.MeshTheme
 
-/** Phone model, the Mac (pairing), private terms, Gemini, memory. Terms, mesh and Gemini apply on Save. */
+/** Phone model, the Mac (pairing), private terms, Gemini, the phone agent, memory. Terms, mesh, Gemini and the phone agent apply on Save. */
 @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 fun SettingsScreen(state: UiState, vm: ChatViewModel, scan: () -> Unit, pick: () -> Unit, openMemory: () -> Unit, close: () -> Unit) {
     var terms by remember { mutableStateOf(state.terms) }
     var mesh by remember { mutableStateOf(state.mesh) }
     var frontier by remember { mutableStateOf(state.frontier) }
+    var phone by remember { mutableStateOf(state.phoneAgent) }
     var code by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
     val tiers = MeshTheme.tiers
@@ -60,7 +61,7 @@ fun SettingsScreen(state: UiState, vm: ChatViewModel, scan: () -> Unit, pick: ()
         Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 12.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = close) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back without saving") }
             Text("Settings", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-            Button(onClick = { vm.saveSettings(terms, frontier, mesh); close() }) { Text("Save") }
+            Button(onClick = { vm.saveSettings(terms, frontier, phone, mesh); close() }) { Text("Save") }
         }
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
@@ -166,6 +167,12 @@ fun SettingsScreen(state: UiState, vm: ChatViewModel, scan: () -> Unit, pick: ()
                     OutlinedTextField(frontier.model, { frontier = frontier.copy(model = it.trim()) }, Modifier.fillMaxWidth().padding(top = 8.dp),
                         label = { Text("Model") }, singleLine = true)
                 }
+            }
+
+            Section("Phone agent (AGI)", "Never chosen by the router. Used only when you pick Use the phone, after you see the " +
+                "exact task. AGI's agent operates a phone that runs the AGI app, and a screenshot of every step goes to AGI.") {
+                OutlinedTextField(phone.apiKey, { phone = phone.copy(apiKey = it.trim()) }, Modifier.fillMaxWidth().testTag("agi-key"),
+                    label = { Text("API key") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
             }
 
             Section("Memory", "This phone holds your memory: conversations, remembered facts and documents. Your Mac keeps a mirror " +

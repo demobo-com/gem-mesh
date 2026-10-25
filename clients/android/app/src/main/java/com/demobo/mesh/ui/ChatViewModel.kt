@@ -19,6 +19,7 @@ import com.demobo.mesh.memory.SessionSummary
 import com.demobo.mesh.net.ChatMessage
 import com.demobo.mesh.net.MeshInfo
 import com.demobo.mesh.net.OpenAiClient
+import com.demobo.mesh.net.PhoneAgentClient
 import com.demobo.mesh.net.StreamEvent
 import com.demobo.mesh.net.TokenCount
 import com.demobo.mesh.nodes.Discovery
@@ -26,6 +27,7 @@ import com.demobo.mesh.nodes.Frontier
 import com.demobo.mesh.nodes.Node
 import com.demobo.mesh.nodes.NodeStore
 import com.demobo.mesh.nodes.Pairing
+import com.demobo.mesh.nodes.PhoneAgent
 import com.demobo.mesh.policy.Policy
 import com.demobo.mesh.route.Candidate
 import com.demobo.mesh.route.Classifier
@@ -141,6 +143,9 @@ data class NodeStatus(val node: Node, val latencyMs: Double? = null, val lastOk:
 /** Approval for the frontier: the exact text, Keep local by default. */
 data class FrontierAsk(val messageId: Long, val text: String, val why: String)
 
+/** Approval for the phone agent: the exact task and how it was checked (a private one is flagged, not refused), Keep local by default. */
+data class PhoneAsk(val messageId: Long, val text: String, val label: String = "public", val why: String = "")
+
 data class QueuedTask(val id: Long, val session: String?, val prompt: String, val needs: String, val status: String, val node: String?)
 
 /** Where the phone's model is, from first launch to ready. */
@@ -174,6 +179,12 @@ data class UiState(
     /** The next message is a question for the frontier (the CLI's /frontier). */
     val frontierNext: Boolean = false,
     val frontierAsk: FrontierAsk? = null,
+    val phoneAgent: PhoneAgent = PhoneAgent(),
+    /** The next message is a task for AGI's phone agent. */
+    val phoneNext: Boolean = false,
+    val phoneAsk: PhoneAsk? = null,
+    /** Steps so far while the phone agent works; null when no task is running. */
+    val phoneSteps: Int? = null,
     val sessions: List<SessionSummary> = emptyList(),
     val session: String? = null,
     val queue: List<QueuedTask> = emptyList(),
@@ -211,6 +222,7 @@ data class UiState(
 class ChatViewModel(app: Application) : AndroidViewModel(app) {
     private val store = NodeStore(app)
     private val client = OpenAiClient()
+    private val phoneAgent = PhoneAgentClient()
     private val basePolicy = Policy.load { name -> runCatching { app.assets.open("policy/$name").bufferedReader().readText() }.getOrNull() }
     private var policy = basePolicy
     private var local = LocalModel(app, LocalModel.choose(app, basePolicy.models))
@@ -259,6 +271,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
             store.terms.collect { t -> policy = basePolicy.withTerms(t); _state.update { it.copy(terms = t.joinToString(", ")) } }
         }
         viewModelScope.launch { store.frontier.collect { f -> _state.update { it.copy(frontier = f) } } }
+        viewModelScope.launch { store.phoneAgent.collect { a -> _state.update { it.copy(phoneAgent = a) } } }
         prepareModel()
         viewModelScope.launch { drainLoop() }
     }
@@ -329,7 +342,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     /** Starts an empty conversation; the others stay in memory. */
     fun newChat() {
         if (_state.value.busy) return
-        _state.update { it.copy(messages = emptyList(), session = null, frontierNext = false) }
+        _state.update { it.copy(messages = emptyList(), session = null, frontierNext = false, phoneNext = false) }
     }
 
     /** Forgets everything, on this phone now and on the Mac at its next sync: conversations, facts, documents. */
@@ -462,17 +475,19 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
 
     fun removeNode(id: String) = viewModelScope.launch { store.saveNodes(store.nodes.first().filter { it.id != id }) }
 
-    fun saveSettings(terms: String, frontier: Frontier, mesh: String) = viewModelScope.launch {
+    fun saveSettings(terms: String, frontier: Frontier, phone: PhoneAgent, mesh: String) = viewModelScope.launch {
         store.saveTerms(terms)
         store.saveFrontier(frontier)
+        store.savePhoneAgent(phone)
         store.saveMesh(mesh)
     }
 
     fun share(text: String) = _state.update { it.copy(draft = text) }
     fun draftTaken() = _state.update { it.copy(draft = null) }
 
-    fun setPreferTier(tier: String?) = _state.update { it.copy(preferTier = tier, frontierNext = false) }
-    fun setFrontierNext(on: Boolean) = _state.update { it.copy(frontierNext = on && it.frontierAllowed) }
+    fun setPreferTier(tier: String?) = _state.update { it.copy(preferTier = tier, frontierNext = false, phoneNext = false) }
+    fun setFrontierNext(on: Boolean) = _state.update { it.copy(frontierNext = on && it.frontierAllowed, phoneNext = false) }
+    fun setPhoneNext(on: Boolean) = _state.update { it.copy(phoneNext = on, frontierNext = false) }
 
     // ---- workspace -----------------------------------------------------------------------------
 
@@ -708,8 +723,9 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
 
     fun send(text: String) {
         val s = _state.value
-        if (text.isBlank() || s.busy || s.frontierAsk != null) return
+        if (text.isBlank() || s.busy || s.frontierAsk != null || s.phoneAsk != null) return
         if (s.frontierNext) return askFrontier(text)
+        if (s.phoneNext) return askPhone(text)
         val history = transcript()
         // Workspace files named in the message go with it (attach_mentions in main.py).
         val attached = Workspace.mentioned(text, workspace)
@@ -1127,6 +1143,84 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
             _state.update { it.copy(busy = false) }
         }
     }
+
+    // ---- phone agent ---------------------------------------------------------------------------
+
+    /**
+     * One task for AGI's phone agent, which operates a phone through the AGI app and sends a screenshot of every step
+     * to AGI. The exact text is shown, flagged with the reason when the task itself is private (operating a phone often
+     * needs names and addresses, so it is not refused), and nothing leaves until the user taps Allow once. Keep local
+     * is the default.
+     */
+    private fun askPhone(text: String) {
+        add(UiMessage(nextId++, "user", text))
+        val id = nextId++
+        add(UiMessage(id, "assistant", "", phase = "Checking privacy on this phone…", streaming = true))
+        _state.update { it.copy(busy = true) }
+        viewModelScope.launch {
+            var (label, hits) = Router.classifyRules(text, policy)
+            var why = hits.take(2).joinToString("; ")
+            if (label == "public" && policy.classifier) {
+                val (l, w) = classifierFor(candidates(), sessionId())(Classifier.textOf(listOf(text)))
+                label = l; why = w
+            }
+            edit(id) { it.copy(phase = "Waiting for your answer…") }
+            _state.update { it.copy(phoneAsk = PhoneAsk(id, text, label, why)) } // busy stays set until the user answers
+        }
+    }
+
+    fun answerPhone(allow: Boolean) {
+        val a = _state.value.phoneAsk ?: return
+        _state.update { it.copy(phoneAsk = null, phoneNext = false) }
+        viewModelScope.launch {
+            val agent = _state.value.phoneAgent
+            when {
+                !allow -> edit(a.messageId) { UiMessage(a.messageId, "notice", "Kept local. Nothing was sent.") }
+                agent.apiKey.isBlank() -> edit(a.messageId) { UiMessage(a.messageId, "notice", "No AGI key in Settings. Nothing was sent.", warn = true) }
+                else -> try {
+                    val session = sessionId()
+                    var prov = Provenance("agi", "AGI phone agent", "T4", a.label,
+                        listOf("phone agent  approved by you · the task and the phone's screen go to AGI"))
+                    edit(a.messageId) { it.copy(phase = "Sending to the phone agent…", provenance = prov) }
+                    val t0 = System.currentTimeMillis()
+                    _state.update { it.copy(phoneSteps = 0) }
+                    val r = try {
+                        // The agent's first screenshot is whatever is on screen: on this phone, leave the chat first.
+                        phoneAgent.run(agent, a.text, beforeStart = { d -> if (d.model == android.os.Build.MODEL) withContext(Dispatchers.Main) { goHome() } }) { steps, device ->
+                            _state.update { it.copy(phoneSteps = steps) }
+                            edit(a.messageId) { it.copy(phase = "AGI is using $device · step $steps…") }
+                        }
+                    } finally {
+                        _state.update { it.copy(phoneSteps = null) }
+                    }
+                    val step = "tool   phone agent → ${r.device} · ${r.steps} step${if (r.steps == 1) "" else "s"} · ${r.terminal}"
+                    when (r.terminal) {
+                        // needs_user_control also carries the agent's report when it ends on a question.
+                        "ok", "needs_user_control", "stopped_by_user", "cancelled" -> {
+                            val answer = r.summary.ifBlank { if (r.terminal == "ok") "Done." else "Stopped." }
+                            prov = prov.copy(seconds = (System.currentTimeMillis() - t0) / 1000.0,
+                                left = "the task and ${r.steps} screenshots went to AGI (approved)", tokens = TokenCount.estimate(a.text, answer))
+                            edit(a.messageId) { it.copy(text = answer, streaming = false, phase = null, provenance = prov, steps = listOf(step)) }
+                            record("user", a.text, session)
+                            record("assistant", answer, session, prov.toMeta().put("phone_agent", true))
+                            refreshMemory()
+                        }
+                        else -> fail(a.messageId, "Phone agent: ${r.summary.ifBlank { r.terminal }}", detail = step)
+                    }
+                } catch (e: Throwable) {
+                    fail(a.messageId, "Phone agent: ${e.message}")
+                }
+            }
+            _state.update { it.copy(busy = false) }
+        }
+    }
+
+    private fun goHome() = getApplication<Application>().startActivity(
+        android.content.Intent(android.content.Intent.ACTION_MAIN).addCategory(android.content.Intent.CATEGORY_HOME)
+            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+
+    /** Stops the phone agent's task; the answer closes with whatever it reported. */
+    fun stopPhone() = viewModelScope.launch { phoneAgent.stop(_state.value.phoneAgent) }
 
     // ---- queue ---------------------------------------------------------------------------------
 

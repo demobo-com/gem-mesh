@@ -158,11 +158,13 @@ fun ChatScreen(state: UiState, vm: ChatViewModel, openSettings: () -> Unit, scan
                 }
             }
             if (state.waiting.isNotEmpty()) QueueCard(state.waiting, onClear = vm::clearQueue)
+            state.phoneSteps?.let { PhoneCard(it, onStop = vm::stopPhone) }
             Composer(state, vm)
         }
     }
 
     state.frontierAsk?.let { FrontierSheet(it, hasKey = state.frontier.apiKey.isNotBlank(), onAnswer = vm::answerFrontier) }
+    state.phoneAsk?.let { PhoneSheet(it, hasKey = state.phoneAgent.apiKey.isNotBlank(), onAnswer = vm::answerPhone) }
     state.change?.let { ChangeSheet(it.plan, onAnswer = vm::answerChange) }
 }
 
@@ -554,6 +556,25 @@ private fun QueueCard(tasks: List<QueuedTask>, onClear: () -> Unit) {
     }
 }
 
+/** AGI's phone agent at work: steps so far (a cent each) and Stop. */
+@Composable
+private fun PhoneCard(steps: Int, onStop: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp).clip(MaterialTheme.shapes.medium)
+            .background(MaterialTheme.colorScheme.surfaceContainer).padding(start = 12.dp, top = 8.dp, bottom = 8.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(8.dp).clip(CircleShape).background(MeshTheme.tiers.cloud))
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Text("Phone agent · step $steps", style = MaterialTheme.typography.labelLarge)
+            Text("AGI is tapping and typing on the phone; it sees the screen.", style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        TextButton(onClick = onStop, modifier = Modifier.testTag("phone-stop")) { Text("Stop") }
+    }
+}
+
 // ---- composer ----------------------------------------------------------------------------------
 
 @Composable
@@ -603,13 +624,17 @@ private fun Composer(state: UiState, vm: ChatViewModel) {
         modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 10.dp),
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerLowest,
-        border = BorderStroke(1.dp, if (state.frontierNext) MeshTheme.tiers.cloud else MaterialTheme.colorScheme.outline),
+        border = BorderStroke(1.dp, if (state.frontierNext || state.phoneNext) MeshTheme.tiers.cloud else MaterialTheme.colorScheme.outline),
         shadowElevation = 2.dp,
     ) {
         Column(Modifier.padding(start = 4.dp, end = 8.dp, top = 2.dp, bottom = 8.dp)) {
             TextField(
                 value = input, onValueChange = { input = it },
-                placeholder = { Text(if (state.frontierNext) "A public question for Gemini" else "Message") },
+                placeholder = { Text(when {
+                    state.frontierNext -> "A public question for Gemini"
+                    state.phoneNext -> "A task for the phone agent"
+                    else -> "Message"
+                }) },
                 maxLines = 6,
                 textStyle = MaterialTheme.typography.bodyLarge,
                 colors = TextFieldDefaults.colors(
@@ -673,7 +698,8 @@ private fun Composer(state: UiState, vm: ChatViewModel) {
 
 /**
  * Auto lets the router decide; a tier raises the preference (the CLI's /tier) but never leaves the policy window;
- * Ask Gemini makes the next message a frontier question (the CLI's /frontier), shown for approval first.
+ * Ask Gemini makes the next message a frontier question (the CLI's /frontier), shown for approval first; Use the phone
+ * makes it a task for AGI's phone agent, shown for approval the same way.
  */
 @Composable
 private fun RouteSelector(state: UiState, vm: ChatViewModel) {
@@ -681,6 +707,7 @@ private fun RouteSelector(state: UiState, vm: ChatViewModel) {
     val tiers = MeshTheme.tiers
     val (label, color) = when {
         state.frontierNext -> "Ask Gemini" to tiers.cloud
+        state.phoneNext -> "Use the phone" to tiers.cloud
         state.preferTier != null -> "Prefer ${state.preferTier}" to tiers.of(state.preferTier)
         else -> "Auto" to MaterialTheme.colorScheme.onSurfaceVariant
     }
@@ -714,6 +741,10 @@ private fun RouteSelector(state: UiState, vm: ChatViewModel) {
                     onClick = { vm.setFrontierNext(true); open = false },
                 )
             }
+            DropdownMenuItem(
+                text = { MenuText("Use the phone (AGI)", "AGI's agent taps and types for you; it sees the screen", dot = tiers.cloud) },
+                onClick = { vm.setPhoneNext(true); open = false },
+            )
         }
     }
 }
@@ -764,6 +795,57 @@ private fun FrontierSheet(a: FrontierAsk, hasKey: Boolean, onAnswer: (Boolean) -
             }
             if (!hasKey) {
                 Text("Add a Gemini API key in Settings to allow this.", style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
+            }
+        }
+    }
+}
+
+/** A task for AGI's phone agent: the exact text, what else leaves (the screen), the cost. Keep local is the default. */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
+@Composable
+private fun PhoneSheet(a: PhoneAsk, hasKey: Boolean, onAnswer: (Boolean) -> Unit) {
+    val cloud = MeshTheme.tiers.cloud
+    ModalBottomSheet(onDismissRequest = { onAnswer(false) }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 24.dp).semantics { testTagsAsResourceId = true }) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(10.dp).clip(CircleShape).background(cloud))
+                Spacer(Modifier.width(10.dp))
+                Text("Let AGI use the phone?", style = MaterialTheme.typography.titleLarge)
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "AGI's agent will tap and type on the phone that runs the AGI app. This task goes to AGI, and so does a " +
+                    "screenshot of every step, including anything on the screen. On this phone, Gem Mesh goes to the home " +
+                    "screen first so this chat is not in the picture. About a cent a step, at most 200 steps.",
+                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                "\"${a.text}\"",
+                style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace, fontSize = 13.sp),
+                modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.small)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(12.dp),
+            )
+            if (a.label != "public") {
+                Spacer(Modifier.height(10.dp))
+                Row(verticalAlignment = Alignment.Top, modifier = Modifier.testTag("phone-private")) {
+                    Icon(Icons.Filled.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Checked as ${a.label}${if (a.why.isNotBlank()) " (${a.why.take(120)})" else ""}. It leaves your devices anyway if you allow it.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                }
+            }
+            Spacer(Modifier.height(20.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedButton(onClick = { onAnswer(true) }, enabled = hasKey, modifier = Modifier.weight(1f).height(48.dp).testTag("phone-allow")) {
+                    Text("Allow once", color = if (hasKey) cloud else MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Button(onClick = { onAnswer(false) }, modifier = Modifier.weight(1f).height(48.dp).testTag("phone-keep")) { Text("Keep local") }
+            }
+            if (!hasKey) {
+                Text("Add an AGI API key in Settings to allow this.", style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
             }

@@ -27,7 +27,13 @@ optional Claude Code shim. `gem-mesh --help` lists everything.
   inside Claude Code.
 
 In a chat: `/help`, `/tier T0|T1|T2|auto`, `/think on|off|auto`, `/network office|airplane|offline|auto`,
-`/hide <device>`, `/queue`, `/memory`, `/remember`, `/recall`, `/frontier <question>`, `/reset`.
+`/hide <device>`, `/queue`, `/memory`, `/remember`, `/recall`, `/frontier <question>`, `/phone <task>`, `/reset`.
+
+`/phone <task>` hands one task to AGI's phone agent (MCP at `api.agi.tech/v1/mcp`), which taps and types on a phone
+that runs the AGI app with its accessibility service on. Only the task is checked and shown; a private task is flagged
+with the reason but not refused. After a yes it goes to AGI, and so does a screenshot of every step (about $0.01 a step,
+at most 200). Ctrl-C stops the task on the phone.
 
 Environment: `MESH_FILES_DIR` (the workspace folder, default `demo/files`), `MESH_HOME` (default `~/.gem-mesh`),
-`MESH_IGNORE=dev1,dev2` (pretend those devices are away), `MESH_NATIVE_LOGS=1` (LiteRT-LM's own logging).
+`MESH_IGNORE=dev1,dev2` (pretend those devices are away), `MESH_NATIVE_LOGS=1` (LiteRT-LM's own logging),
+`AGI_API_KEY` (for `/phone`, from platform.agi.tech), `MESH_AGI_URL` (another MCP endpoint for `/phone`).
