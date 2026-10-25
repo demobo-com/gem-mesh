@@ -33,7 +33,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -268,7 +271,9 @@ private fun RangePicker(range: MeshRange, setRange: (MeshRange) -> Unit) {
 
 // ---- the live map ----------------------------------------------------------------------------------
 
-private class Spot(val id: String, val name: String, val tier: String, val sub: String, val up: Boolean, val x: Float, val y: Float)
+/** `away`: a device the range's turns name that the phone cannot see now (gone from mDNS, never paired). */
+private class Spot(val id: String, val name: String, val tier: String, val sub: String, val up: Boolean, val x: Float, val y: Float,
+                   val away: Boolean = false)
 
 /** Places a child centred on (x, y) of its parent, in pixels, without taking up room. */
 private fun Modifier.centreAt(x: Float, y: Float): Modifier = layout { m, c ->
@@ -279,18 +284,25 @@ private fun Modifier.centreAt(x: Float, y: Float): Modifier = layout { m, c ->
 /**
  * The phone at the centre, the mesh's machines on a ring around it inside the dashed mesh boundary, Gemini outside.
  * A line per device pair that talked in the range: its width is the work tokens; dots run along it while a request
- * is in flight. Tap a line's label for its turns.
+ * is in flight. Tap a line's label for its turns. "Show away" puts back the devices that answered or asked in the range
+ * but are offline now and were never paired, greyed, with their lines.
  */
 @Composable
 private fun MeshMap(state: UiState, stats: MeshStats, open: (MeshRoute) -> Unit) {
     val height = 360.dp
+    var showAway by rememberSaveable { mutableStateOf(false) }
+    val away = awayDevices(state, stats)
     BoxWithConstraints(Modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(16.dp)).background(CP.panel.copy(alpha = 0.85f))
         .border(1.dp, CP.line, RoundedCornerShape(16.dp))) {
         val d = LocalDensity.current.density
         val w = constraints.maxWidth / d                     // the layout in dp, as on the iPhone
         val cx = w / 2; val cy = 205f
-        val spots = layout(state, stats, w, cx, cy)
+        val spots = layout(state, stats, w, cx, cy, if (showAway) away else emptyList())
         val pos = spots.associate { it.id to (it.x to it.y) }
+        val tierAt = spots.associate { it.id to it.tier }
+        val awayIds = spots.filter { it.away }.map { it.id }.toSet()
+        // A line to a device that is away now is drawn fainter: it is history, not a live link.
+        fun linkColour(l: MeshLink) = CP.tier(tierAt[l.node] ?: state.meshTier(l.node)).copy(alpha = if (l.node in awayIds || l.origin in awayIds) 0.4f else 0.85f)
         val links = stats.links.filter { (l, _) -> l.origin in pos && l.node in pos && l.origin != l.node }
         val maxWork = maxOf(1, links.values.maxOfOrNull { ts -> ts.sumOf { it.work } } ?: 1)
         Canvas(Modifier.fillMaxSize()) {
@@ -304,11 +316,10 @@ private fun MeshMap(state: UiState, stats: MeshStats, open: (MeshRoute) -> Unit)
             }
             for ((l, ts) in links) {
                 val (ax, ay) = pos.getValue(l.origin); val (bx, by) = pos.getValue(l.node)
-                val tier = state.meshTier(l.node)
-                if (tier == "T4") drawLine(CP.cloud, p(ax, ay), p(bx, by), 1.5f * d, pathEffect = dashed(2f, 4f))
-                else drawLine(CP.tier(tier).copy(alpha = 0.85f), p(ax, ay), p(bx, by), (1.5f + 5.5f * ts.sumOf { it.work } / maxWork) * d, StrokeCap.Round)
+                if (tierAt[l.node] == "T4") drawLine(CP.cloud, p(ax, ay), p(bx, by), 1.5f * d, pathEffect = dashed(2f, 4f))
+                else drawLine(linkColour(l), p(ax, ay), p(bx, by), (1.5f + 5.5f * ts.sumOf { it.work } / maxWork) * d, StrokeCap.Round)
             }
-            val mac = spots.firstOrNull { it.tier == "T1" }
+            val mac = spots.firstOrNull { it.tier == "T1" && !it.away }
             if (mac != null && state.lastMirrorSync != null) {
                 val path = Path().apply {                                        // the Mac's memory mirror
                     moveTo((cx - 30) * d, (cy + 24) * d)
@@ -322,7 +333,15 @@ private fun MeshMap(state: UiState, stats: MeshStats, open: (MeshRoute) -> Unit)
         val to = active?.let { pos[it] }
         if (active != null && to != null) FlowDots(cx to cy, to, CP.tier(state.meshTier(active)), still = active == state.device)
 
-        Box(Modifier.padding(start = 12.dp, top = 10.dp)) { CPLabel("Mesh boundary", CP.dim) }
+        Row(Modifier.padding(start = 12.dp, top = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            CPLabel("Mesh boundary", CP.dim)
+            if (away.isNotEmpty() || showAway) {
+                val col = if (showAway) CP.link else CP.muted
+                Text(if (showAway) "● away shown" else "○ show away · ${away.size}", style = CP.mono(11.sp), color = col,
+                    modifier = Modifier.clip(RoundedCornerShape(6.dp)).outline(col.copy(alpha = 0.5f), 6.dp).clickable { showAway = !showAway }
+                        .padding(horizontal = 8.dp, vertical = 4.dp).testTag("showAway"))
+            }
+        }
 
         for (s in spots) NodeCard(s, centre = s.id == state.device, Modifier.centreAt(s.x * d, s.y * d))
 
@@ -330,7 +349,7 @@ private fun MeshMap(state: UiState, stats: MeshStats, open: (MeshRoute) -> Unit)
             val (ax, ay) = pos.getValue(l.origin); val (bx, by) = pos.getValue(l.node)
             Text("${MeshStats.short(ts.sumOf { it.work })} · ${ts.size} ›", style = CP.mono(11.sp), color = CP.text,
                 modifier = Modifier.centreAt((ax + bx) / 2 * d, ((ay + by) / 2 - 6) * d).clip(RoundedCornerShape(8.dp)).background(CP.ground)
-                    .border(1.dp, CP.tier(state.meshTier(l.node)).copy(alpha = 0.8f), RoundedCornerShape(8.dp))
+                    .border(1.dp, linkColour(l), RoundedCornerShape(8.dp))
                     .clickable { open(MeshRoute.Link(l)) }.padding(horizontal = 7.dp, vertical = 3.dp).testTag("meshLink"))
         }
 
@@ -348,27 +367,55 @@ private fun MeshMap(state: UiState, stats: MeshStats, open: (MeshRoute) -> Unit)
             Text("width = tokens", style = legend, color = CP.dim)
             Spacer(Modifier.weight(1f))
             val sync = state.lastMirrorSync
-            if (sync != null && spots.any { it.tier == "T1" }) Text("memory ⇄ ${CP.time(sync / 1000.0)}", style = legend, color = CP.phone, maxLines = 1)
+            if (sync != null && spots.any { it.tier == "T1" && !it.away }) Text("memory ⇄ ${CP.time(sync / 1000.0)}", style = legend, color = CP.phone, maxLines = 1)
         }
     }
 }
 
-/** The phone in the centre; machines spread over the upper arc of the inner ring; Gemini at the top right. */
-private fun layout(state: UiState, stats: MeshStats, w: Float, cx: Float, cy: Float): List<Spot> {
+/** A device the range's turns name but the phone's node list does not have now, with the tier its turns recorded. */
+private class AwayDevice(val device: String, val tier: String, val last: Double)
+
+/**
+ * Devices that answered (or, for the Mac's CLI, asked) in the range but are not in the node list: a node found over
+ * mDNS is dropped when it goes offline or the phone leaves the Wi-Fi, and only paired nodes are kept.
+ */
+private fun awayDevices(state: UiState, stats: MeshStats): List<AwayDevice> {
+    val known = state.machines.map { it.device }.toSet() + state.device + "frontier"
+    val tiers = HashMap<String, MutableList<String>>()
+    val last = HashMap<String, Double>()
+    for (t in stats.turns) {
+        // The tier a turn recorded is its answering node's; a device that only asked takes it from turns it answered itself.
+        for ((dev, tier) in listOf(t.node to t.tier, t.origin to if (t.origin == t.node) t.tier else "?")) {
+            if (dev in known) continue
+            tiers.getOrPut(dev) { mutableListOf() } += tier
+            last[dev] = maxOf(last[dev] ?: 0.0, t.ts)
+        }
+    }
+    return tiers.map { (dev, ts) ->
+        AwayDevice(dev, ts.filter { it != "?" }.groupingBy { it }.eachCount().maxByOrNull { it.value }?.key ?: "?", last.getValue(dev))
+    }
+}
+
+/** The phone in the centre; machines (and away devices, when shown) spread over the upper arc of the inner ring; Gemini at the top right. */
+private fun layout(state: UiState, stats: MeshStats, w: Float, cx: Float, cy: Float, away: List<AwayDevice>): List<Spot> {
     val phoneSub = if (state.model is ModelState.Ready) "${state.modelLabel} · ${MeshStats.short(stats.byTier["T0"]?.work ?: 0)}" else "${state.modelLabel} · off"
     val out = mutableListOf(Spot(state.device, "T0 this phone", "T0", phoneSub, state.phoneReady, cx, cy))
-    val machines = state.machines.sortedBy { it.tier }
-    val angles: List<Double> = when (machines.size) {
+    // id, tier, sub, up, away: the machines the phone knows, then the away ones, ordered by tier around the ring.
+    val ring = (state.machines.map { st ->
+        val model = st.model.replace("gemma4-", "").uppercase()
+        val sub = if (st.reachable) model + (st.latencyMs?.let { " · ${it.roundToInt()} ms" } ?: "") else "$model · away"
+        Spot(st.device, "${st.tier} ${st.device}", st.tier, sub, st.reachable, 0f, 0f)
+    } + away.map { a -> Spot(a.device, "${a.tier} ${a.device}", a.tier, "away · ${CP.time(a.last)}", false, 0f, 0f, away = true) })
+        .sortedBy { it.tier }
+    val angles: List<Double> = when (ring.size) {
         0 -> emptyList()
         1 -> listOf(-125.0)
         2 -> listOf(-145.0, -35.0)
-        else -> machines.indices.map { -150 + 120.0 * it / (machines.size - 1) }
+        else -> ring.indices.map { -150 + 120.0 * it / (ring.size - 1) }
     }
-    for ((st, a) in machines.zip(angles)) {
+    for ((s, a) in ring.zip(angles)) {
         val r = Math.toRadians(a)
-        val model = st.model.replace("gemma4-", "").uppercase()
-        val sub = if (st.reachable) model + (st.latencyMs?.let { " · ${it.roundToInt()} ms" } ?: "") else "$model · away"
-        out += Spot(st.device, "${st.tier} ${st.device}", st.tier, sub, st.reachable, (cx + 125 * cos(r)).toFloat(), (cy + 115 * sin(r)).toFloat())
+        out += Spot(s.id, s.name, s.tier, s.sub, s.up, (cx + 125 * cos(r)).toFloat(), (cy + 115 * sin(r)).toFloat(), s.away)
     }
     if (state.frontierAllowed) {
         out += Spot("frontier", "T4 Gemini", "T4", "${MeshStats.short(stats.byTier["T4"]?.work ?: 0)} · asks", state.frontier.apiKey.isNotBlank(), w - 62, 30f)
