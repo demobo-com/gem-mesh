@@ -59,6 +59,12 @@ data class Frontier(
     val apiKey: String = "",
 )
 
+/** AGI's phone agent (an MCP server that operates a phone through its own app). Never routed to; used only after the user approves. */
+data class PhoneAgent(
+    val url: String = "https://api.agi.tech/v1/mcp",
+    val apiKey: String = "",
+)
+
 /**
  * The pairing code `gem-mesh pair` prints (PROTOCOL §1):
  * {"v":1,"app":"gemma-mesh","mesh":"default","nodes":["http://192.168.1.20:9400"],"device":"my-macbook"}

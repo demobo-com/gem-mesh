@@ -159,6 +159,12 @@ mDNS there).
 Gemini is never chosen by the router: pick **Ask Gemini** in the route menu, for a public conversation; the sheet
 shows the exact text, Keep local is the default, and the key is entered in Settings.
 
+AGI's phone agent works the same way: pick **Use the phone (AGI)** for the next message, and the sheet shows the
+exact task, with the reason when it was checked as private (flagged, not refused). After Allow once it goes to `api.agi.tech/v1/mcp`, whose agent taps and types
+on a phone that runs the AGI app with its accessibility service on, and a screenshot of every step goes to AGI (about
+$0.01 a step). When that phone is this one, Gem Mesh goes to the home screen first so the chat is not in the
+picture. A card shows the steps with Stop; the key is entered in Settings → Phone agent (AGI).
+
 The model downloads from Hugging Face into the app's files directory (`Android/data/com.demobo.mesh/files/`), E4B
 (3.7 GB) or E2B (2.6 GB) on phones with less than about 8 GB of memory; Settings can switch between the two.
 

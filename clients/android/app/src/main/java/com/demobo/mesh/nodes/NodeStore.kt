@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.map
 
 private val Context.dataStore by preferencesDataStore(name = "mesh")
 
-/** Settings kept on the phone: static nodes (paired or typed), mesh name, extra private terms, the frontier key, device name. */
+/** Settings kept on the phone: static nodes (paired or typed), mesh name, extra private terms, the frontier and phone agent keys, device name. */
 class NodeStore(private val context: Context) {
     private val nodesKey = stringPreferencesKey("static_nodes")
     private val meshKey = stringPreferencesKey("mesh")
@@ -20,6 +20,8 @@ class NodeStore(private val context: Context) {
     private val frontierUrlKey = stringPreferencesKey("frontier_url")
     private val frontierModelKey = stringPreferencesKey("frontier_model")
     private val frontierKeyKey = stringPreferencesKey("frontier_key")
+    private val phoneAgentUrlKey = stringPreferencesKey("phone_agent_url")
+    private val phoneAgentKeyKey = stringPreferencesKey("phone_agent_key")
 
     /** Nodes from a pairing code or typed in Settings (PROTOCOL §1 static nodes); health-checked like any other. */
     val nodes: Flow<List<Node>> = context.dataStore.data.map { p ->
@@ -39,6 +41,10 @@ class NodeStore(private val context: Context) {
         Frontier(p[frontierUrlKey] ?: d.baseUrl, p[frontierModelKey] ?: d.model, p[frontierKeyKey] ?: "")
     }
 
+    val phoneAgent: Flow<PhoneAgent> = context.dataStore.data.map { p ->
+        PhoneAgent(p[phoneAgentUrlKey] ?: PhoneAgent().url, p[phoneAgentKeyKey] ?: "")
+    }
+
     /**
      * This phone's device name: the prefix of every memory event id ("<device>:<seq>"), so it is fixed on first use.
      * From the phone's model name, e.g. "pixel-11" or "xiaomi-k17-pro".
@@ -56,4 +62,5 @@ class NodeStore(private val context: Context) {
     suspend fun saveFrontier(f: Frontier) = context.dataStore.edit {
         it[frontierUrlKey] = f.baseUrl; it[frontierModelKey] = f.model; it[frontierKeyKey] = f.apiKey
     }
+    suspend fun savePhoneAgent(a: PhoneAgent) = context.dataStore.edit { it[phoneAgentUrlKey] = a.url; it[phoneAgentKeyKey] = a.apiKey }
 }
