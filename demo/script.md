@@ -33,7 +33,7 @@
 
 > "My most sensitive numbers, recalled by voice, with no network."
 
-*Dana's associate hands over a printed term sheet. Photograph it.*
+*Dana's associate hands over a printed term sheet. Photograph it with the camera button.*
 
 🎙️ **Priya:** *"What's the raise, the valuation and the option pool?"*
 
@@ -64,7 +64,7 @@ GPT, with the numbers."*
 **Beat 2: the negotiation**
 
 *Dana goes to the whiteboard and sweetens the deal: **$180M pre · 1.5x participating preference · 2 board seats**.
-Photograph it.*
+Photograph it with the camera button.*
 
 🎙️ **Priya:** *"Compare the whiteboard with my negotiation notes. Are we inside our walk-away? Draft a counter."*
 
@@ -133,10 +133,11 @@ show me what common gets if we're acquired for two hundred million."*
 | Internal eval report | `eval-report.md` | Corvid's private benchmark results versus Claude and GPT, several pages long |
 
 The four documents and the two stand-in photos are in `demo/files/`, so **Settings → Demo files** puts them on the
-phone. Use the stand-ins to rehearse, or on stage if a live photo comes out badly: attach them with **paperclip → Files**,
-which keeps their names. Attach each photo with the paperclip in the same message as the question: the paperclip
-writes the photo's name (`photo-20261024-…jpg`, or `whiteboard.jpg` for a stand-in) into the message box, which is how
-the model knows which photo to look at. The microphone also writes into the message box,
+phone. Take each live photo with the **camera button** next to the paperclip, then speak the question in the same
+message: the camera saves the photo to the workspace and writes its name (`photo-20261024-…jpg`) into the message box,
+which is how the model knows which photo to look at. Use the stand-ins to rehearse, or on stage if a live photo comes
+out badly: attach them with **paperclip → Files**, which keeps their names (`whiteboard.jpg`) and writes them into the
+message box the same way. The microphone also writes into the message box,
 so glance at the words before sending: the document names below must come through as said.
 
 ## Why each scene lands on its device
