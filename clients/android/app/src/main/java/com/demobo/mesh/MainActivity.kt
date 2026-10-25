@@ -47,7 +47,7 @@ import com.journeyapps.barcodescanner.ScanOptions
 class MainActivity : ComponentActivity() {
     private val vm: ChatViewModel by viewModels()
 
-    /** The pairing QR from `gem-mesh pair`; the camera is used for this and nothing else. */
+    /** The pairing QR from `gem-mesh pair`; the camera is otherwise used only for photos taken from the composer. */
     private val scanner = registerForActivityResult(ScanContract()) { r -> r.contents?.let { vm.pair(it) } }
     private val notifications = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
     /** Photos and documents into the workspace; the originals stay where they are. */

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The camera app writes a new photo straight into the workspace (the composer's camera button). -->
+<paths>
+    <external-files-path name="workspace" path="workspace/" />
+</paths>

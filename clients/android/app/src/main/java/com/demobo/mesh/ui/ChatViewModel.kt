@@ -498,6 +498,20 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         if (names.isNotEmpty()) _state.update { it.copy(draft = (typed.trimEnd() + " " + names.joinToString(" ")).trim() + " ") }
     }
 
+    /** Where the camera app writes the next photo: a new file in the workspace, named by time like picked photos. */
+    fun newPhotoFile(): java.io.File =
+        java.io.File(workspace.dir, "photo-" + java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(java.util.Date()) + ".jpg")
+
+    /**
+     * The composer's camera: keep the photo and name it in the message being written, as the paperclip does, so it goes
+     * with the message and the phone's own model can look at it. A cancelled shot leaves an empty file: drop it.
+     */
+    fun photoTaken(file: java.io.File, ok: Boolean, typed: String) = viewModelScope.launch(Dispatchers.IO) {
+        if (!ok || file.length() == 0L) { file.delete(); return@launch }
+        refreshWorkspace()
+        _state.update { it.copy(draft = (typed.trimEnd() + " " + file.name).trim() + " ") }
+    }
+
     /** The composer's microphone: speech to text on the phone's own model; the words land in the message box to review. */
     fun transcribe(wav: ByteArray, typed: String) = viewModelScope.launch {
         if (wav.size < 16000) return@launch                                   // under half a second: nothing said

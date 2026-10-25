@@ -10,7 +10,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Photos added to the workspace keep their GPS location, so the app can show it and remove it before sharing. -->
     <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
-    <!-- Only for scanning the pairing QR code. -->
+    <!-- Scanning the pairing QR code, and the composer's camera button (the photo goes into the workspace, not off the phone). -->
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- Voice input: recorded and transcribed on the phone by its own model; audio never leaves the phone. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
@@ -42,5 +42,14 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
+
+        <!-- Hands the camera app a file in the workspace to write the photo into. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/workspace_paths" />
+        </provider>
     </application>
 </manifest>
