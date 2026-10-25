@@ -103,7 +103,7 @@ code { font-family: var(--mono); font-size: .9em; color: var(--mesh); }
 .vo li { break-inside: avoid; }
 .vo li { font-size: inherit; line-height: inherit; }
 body.no-vo .vo { display: none; }
-.slide:has(> .vo) > :first-child { margin-top: auto; }   /* the slide's content stays centred above the notes */
+body:not(.no-vo) .slide:has(> .vo) > :first-child { margin-top: auto; }   /* with the notes shown, the content stays centred above them */
 
 /* 2 · how: one card per role in the analogy */
 .roles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.8vmin; }
