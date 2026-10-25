@@ -128,6 +128,37 @@ body:not(.no-vo) .slide:has(> .vo) > :first-child { margin-top: auto; }   /* wit
 .glue b { font-family: var(--display); font-weight: 700; font-size: clamp(1.3rem, 4vmin, 2.9rem); line-height: 1; }
 .glue span { font-family: var(--display); font-weight: 600; font-size: clamp(1rem, 3vmin, 2.1rem); }
 .glue i { font-style: normal; font-family: var(--mono); font-size: clamp(.62rem, 1.45vmin, .92rem); color: var(--muted); margin-left: auto; }
+/* The wireless links from each role down to the mesh; still lines without motion, signals running down with it. */
+.links { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.8vmin; height: 4.4vmin; margin: -2.2vmin 0; }
+.links i { position: relative; }
+.links i::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; transform: translateX(-50%); opacity: .6;
+  background: repeating-linear-gradient(to bottom, currentColor 0 .7vmin, transparent .7vmin 1.4vmin); }
+.links i::after { content: ""; position: absolute; left: 50%; top: 0; width: 1.1vmin; height: 1.1vmin; border-radius: 50%; transform: translate(-50%, -50%);
+  background: currentColor; box-shadow: 0 0 1.6vmin .2vmin currentColor; opacity: 0; }
+.links .g1 { color: #8fb6ff; } .links .g2 { color: #a9c1ff; } .links .g4 { color: var(--phone); } .links .g6 { color: #f0a6fb; }
+@media (prefers-reduced-motion: no-preference) {
+  /* 2 · how: the four roles arrive in order, then signals run down into Gem Mesh, which glows as they land. */
+  .slide.active .roles .role { animation: rise .6s cubic-bezier(.2, .7, .2, 1) both; }
+  .slide.active .roles .role:nth-child(2) { animation-delay: .15s; }
+  .slide.active .roles .role:nth-child(3) { animation-delay: .3s; }
+  .slide.active .roles .role:nth-child(4) { animation-delay: .45s; }
+  .slide.active .links { animation: rise .5s .7s both; }
+  .slide.active .links i::before { animation: flow .8s linear infinite; }
+  .slide.active .links i::after { animation: drop 2.4s 1s ease-in infinite; }
+  .slide.active .links i:nth-child(2)::after { animation-delay: 1.6s; }
+  .slide.active .links i:nth-child(3)::after { animation-delay: 2.2s; }
+  .slide.active .links i:nth-child(4)::after { animation-delay: 2.8s; }
+  .slide.active .glue { animation: rise .6s .9s both, glow 2.4s 2s ease-in-out infinite; }
+  .slide.active .glue b.grad { background-image: linear-gradient(90deg, var(--phone), var(--mesh), #a9c1ff, var(--phone)); background-size: 300% 100%;
+    animation: shimmer 6s linear infinite; }
+  .role { transition: transform .25s, box-shadow .25s; }
+  .role:hover { transform: translateY(-.6vmin); box-shadow: 0 1.2vmin 3vmin rgba(0, 0, 0, .35); }
+  @keyframes rise { from { opacity: 0; transform: translateY(2.6vmin); } to { opacity: 1; transform: none; } }
+  @keyframes flow { to { background-position: 0 1.4vmin; } }
+  @keyframes drop { 0% { top: 0; opacity: 0; } 12% { opacity: 1; } 88% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+  @keyframes glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(111, 155, 255, 0); } 50% { box-shadow: 0 0 3.2vmin .3vmin rgba(111, 155, 255, .32); } }
+  @keyframes shimmer { to { background-position: 300% 0; } }
+}
 
 /* 3 · models */
 .tiers5 { display: grid; grid-template-columns: 1fr 1fr 1fr .78fr .78fr; gap: 1.6vmin; align-items: end; }
@@ -234,6 +265,7 @@ body:not(.no-vo) .slide:has(> .vo) > :first-child { margin-top: auto; }   /* wit
   .slide { overflow-y: auto; justify-content: flex-start; }
   .pitch, .try { grid-template-columns: 1fr; }
   .techs, .roles, .uses, .steps, .steps.three { grid-template-columns: 1fr 1fr; }
+  .links { display: none; }
   .vid-grid { grid-template-columns: 1fr; } .flow { flex-wrap: wrap; gap: 1vmin; } .flow i { display: none; }
   .tiers5 { grid-template-columns: 1fr; } .tier { min-height: 0 !important; }
   .shots, .shots.four, .obs { grid-template-columns: repeat(2, 1fr); max-width: none; }
@@ -294,6 +326,7 @@ body:not(.no-vo) .slide:has(> .vo) > :first-child { margin-top: auto; }   /* wit
     <div class="role g6"><div class="r">The hands</div><h3>Mobile-use MCP</h3><div class="u">AGI, Inc.</div>
       <ul><li>A phone agent that taps and types in apps for you</li><li>You approve the exact task first; Keep local is the default</li></ul></div>
   </div>
+  <div class="links" aria-hidden="true"><i class="g1"></i><i class="g2"></i><i class="g4"></i><i class="g6"></i></div>
   <div class="glue"><b class="grad">Gem Mesh</b><span>connects them together, wirelessly</span><i>Wi-Fi or hotspot · mDNS auto-discovery · HTTPS pairing</i></div>
   <aside class="vo"><b>Voice-over</b><ol>
     <li>The brain: the Gemma 4 family, from E4B on the phone to 31B on the workstation.</li>
